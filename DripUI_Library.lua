@@ -1,5 +1,3 @@
--- DRIP CLIENT | MOBILE UI Library
--- Compact version with mobile/PC drag support (FIXED)
 local DripUI = {}
 
 local Players = game:GetService("Players")
