@@ -336,7 +336,6 @@ function DripUI:Window(config)
             AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundTransparency = 1,
             Visible = tabIndex == 1,
-            ClipsDescendants = false,
             ZIndex = 3
         })
         
