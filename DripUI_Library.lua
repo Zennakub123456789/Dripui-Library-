@@ -577,8 +577,16 @@ function DripUI:Window(config)
                 isOpen = not isOpen
                 if isOpen then
                     optionsFrame.Visible = true
-                    local optionCount = cfg.Options and #cfg.Options or 0
-                    local height = math.min(optionCount * 20 + 4, 80)
+                    RunService.Heartbeat:Wait()
+                    local contentHeight = 0
+                    pcall(function()
+                        contentHeight = optionsList.CanvasSize.Y.Offset
+                    end)
+                    if contentHeight == 0 then
+                        local optionCount = cfg.Options and #cfg.Options or 0
+                        contentHeight = optionCount * 20 + 4
+                    end
+                    local height = math.min(contentHeight, 80)
                     tween(optionsFrame, 0.2, { Size = UDim2.new(0.6, 0, 0, height) })
                     arrow.Text = "▲"
                 else
