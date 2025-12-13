@@ -117,8 +117,8 @@ function DripUI:Window(config)
     })
     protectGui(ScreenGui)
     
-    local windowWidth = config.Width or 200
-    local windowHeight = config.Height or 220
+    local windowWidth = 250
+    local windowHeight = 300
     local titleBarHeight = 24
     local tabBarHeight = 24
     local accentLineHeight = 2
