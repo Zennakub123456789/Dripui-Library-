@@ -1,7 +1,7 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.6 ULTIMATE FIXED ]]
--- NO ABBREVIATIONS - FULL VERBOSE PROPERTY ASSIGNMENT
--- FIXED: IsLoaded Error (Changed to .Parent check)
--- FIXED: Floating Dropdown Position Syncing
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.7 ULTIMATE ]]
+-- COMPLETE IMPLEMENTATION: VERBOSE PROPERTY ASSIGNMENTS
+-- FIXED: COLOR THEME (BACK TO ORIGINAL GRAY)
+-- FIXED: DROPDOWN CLOSES ON COLLAPSE/TAB SWITCH
 -- DESIGN: COMPACT MOBILE (280x280)
 
 local DripUI = {}
@@ -18,7 +18,7 @@ local LocalPlayer = Players.LocalPlayer
 -- // INTERNAL CONFIGURATION //
 local ConfigFolder = "DripUI_Config"
 
--- // PERSISTENCE FUNCTIONS //
+-- // PERSISTENCE LOGIC //
 
 local function EnsureConfigFolder()
     local success, exists = pcall(function()
@@ -38,7 +38,7 @@ local function SaveConfig(data, id)
         return HttpService:JSONEncode(data)
     end)
     if success then
-        local writeSuccess, writeErr = pcall(function()
+        pcall(function()
             writefile(filePath, json)
         end)
     end
@@ -107,15 +107,15 @@ local function RunTween(instance, duration, properties)
     return tweenObject
 end
 
--- // THEME DATA (Compact) //
+-- // THEME DATA (RESTORED TO ORIGINAL GRAY) //
 local Theme = {
-    Background = Color3.fromRGB(10, 10, 10),
-    Container = Color3.fromRGB(26, 26, 26),
-    Accent = Color3.fromRGB(255, 0, 255),
+    Background = Color3.fromRGB(32, 32, 38), -- Original Gray
+    Container = Color3.fromRGB(38, 38, 44),  -- Original Darker Gray
+    Accent = Color3.fromRGB(255, 0, 255),    -- Neon Pink
     TextMain = Color3.fromRGB(255, 255, 255),
-    TextDim = Color3.fromRGB(119, 119, 119),
-    ElementBG = Color3.fromRGB(17, 17, 17),
-    Stroke = Color3.fromRGB(37, 37, 37),
+    TextDim = Color3.fromRGB(180, 180, 185), -- Original Dimmed Text
+    ElementBG = Color3.fromRGB(25, 25, 30),  -- Content Background
+    Stroke = Color3.fromRGB(60, 60, 68),    -- Original Border
     HeaderHeight = 32,
     WindowWidth = 280,
     WindowHeight = 280
@@ -267,6 +267,7 @@ function DripUI:Window(options)
     ContentHolder.BackgroundTransparency = 1
     ContentHolder.ZIndex = 2
     
+    -- Global Close Dropdown
     local function GlobalCloseDropdown()
         if self.ActiveDropdown then
             self.ActiveDropdown:Close()
@@ -276,7 +277,9 @@ function DripUI:Window(options)
 
     -- Header Click Collapse
     Header.MouseButton1Click:Connect(function()
+        -- FIXED: ปิด Dropdown ก่อนย่อเฟรม
         GlobalCloseDropdown()
+        
         self.IsCollapsed = not self.IsCollapsed
         if self.IsCollapsed then
             RunTween(MainFrame, 0.4, { Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.HeaderHeight) })
@@ -293,7 +296,9 @@ function DripUI:Window(options)
     
     -- Tab Selection Logic
     function self:SelectTab(name)
+        -- FIXED: ปิด Dropdown เมื่อสลับ Tab
         GlobalCloseDropdown()
+        
         for tabName, tabObj in pairs(self.Tabs) do
             if tabName == name then
                 if tabObj.ButtonInstance then
@@ -403,7 +408,7 @@ function DripUI:Window(options)
             CheckStroke.Name = "CheckStroke"
             CheckStroke.Parent = CheckBox
             CheckStroke.Thickness = 1
-            CheckStroke.Color = toggleValue and Theme.Accent or Color3.fromRGB(51, 51, 51)
+            CheckStroke.Color = toggleValue and Theme.Accent or Color3.fromRGB(80, 80, 88)
             CheckStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             
             local ToggleLabel = Instance.new("TextLabel")
@@ -415,13 +420,13 @@ function DripUI:Window(options)
             ToggleLabel.Text = toggleTitle
             ToggleLabel.Font = Enum.Font.GothamMedium
             ToggleLabel.TextSize = 11
-            ToggleLabel.TextColor3 = Color3.fromRGB(221, 221, 221)
+            ToggleLabel.TextColor3 = Theme.TextMain
             ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
             ToggleLabel.ZIndex = 11
             
             local function UpdateVisuals(state)
                 local targetColor = state and Theme.Accent or Theme.ElementBG
-                local strokeColor = state and Theme.Accent or Color3.fromRGB(51, 51, 51)
+                local strokeColor = state and Theme.Accent or Color3.fromRGB(80, 80, 88)
                 RunTween(CheckBox, 0.2, { BackgroundColor3 = targetColor })
                 RunTween(CheckStroke, 0.2, { Color = strokeColor })
             end
@@ -490,7 +495,7 @@ function DripUI:Window(options)
             Label.Text = dropTitle
             Label.Font = Enum.Font.GothamMedium
             Label.TextSize = 11
-            Label.TextColor3 = Color3.fromRGB(221, 221, 221)
+            Label.TextColor3 = Theme.TextMain
             Label.TextXAlignment = Enum.TextXAlignment.Left
             Label.ZIndex = 16
             
@@ -511,7 +516,7 @@ function DripUI:Window(options)
             
             local DropStroke = Instance.new("UIStroke")
             DropStroke.Thickness = 1
-            DropStroke.Color = Color3.fromRGB(51, 51, 51)
+            DropStroke.Color = Theme.Stroke
             DropStroke.Parent = DropBox
             
             local SelectedText = Instance.new("TextLabel")
@@ -523,7 +528,7 @@ function DripUI:Window(options)
             SelectedText.Text = dropValue
             SelectedText.Font = Enum.Font.Gotham
             SelectedText.TextSize = 10
-            SelectedText.TextColor3 = Color3.fromRGB(221, 221, 221)
+            SelectedText.TextColor3 = Theme.TextMain
             SelectedText.TextXAlignment = Enum.TextXAlignment.Left
             SelectedText.ZIndex = 18
             
@@ -542,7 +547,7 @@ function DripUI:Window(options)
             OptionsFrame.Name = "DropdownOptions_" .. dropTitle
             OptionsFrame.Parent = DripScreenGui
             OptionsFrame.Size = UDim2.new(0, 205, 0, 0)
-            OptionsFrame.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
+            OptionsFrame.BackgroundColor3 = Theme.Container
             OptionsFrame.BorderSizePixel = 0
             OptionsFrame.ClipsDescendants = true
             OptionsFrame.Visible = false
@@ -593,11 +598,10 @@ function DripUI:Window(options)
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- อัปเดตตำแหน่งตามปุ่มเมื่อมีการขยับหน้าต่าง (FIXED POSITION UPDATING)
             local positionUpdateConn = RunService.RenderStepped:Connect(function()
                 if isMenuOpen and OptionsFrame and OptionsFrame.Visible then
-                    -- ตรวจสอบว่า DropBox ยังอยู่ใน Game หรือไม่ (ใช้ .Parent แทน .IsLoaded)
-                    if not DropBox or not DropBox.Parent or not MainFrame or not MainFrame.Visible then
+                    -- FIXED: ตรวจสอบการย่อเฟรมหรือการซ่อน GUI
+                    if not DropBox or not DropBox.Parent or not MainFrame or not MainFrame.Visible or self.IsCollapsed then
                         CloseThisMenu()
                         return
                     end
@@ -605,10 +609,8 @@ function DripUI:Window(options)
                     local currentAbsPos = DropBox.AbsolutePosition
                     local currentAbsSize = DropBox.AbsoluteSize
                     
-                    -- อัปเดตตำแหน่งกล่องตัวเลือกให้ตามปุ่ม DropBox เสมอ
                     OptionsFrame.Position = UDim2.fromOffset(currentAbsPos.X, currentAbsPos.Y + currentAbsSize.Y + 2)
                     
-                    -- ปรับขนาดความกว้างให้ตรงกับปุ่มเผื่อกรณีลากไปมา
                     if OptionsFrame.Size.X.Offset ~= currentAbsSize.X then
                          OptionsFrame.Size = UDim2.new(0, currentAbsSize.X, 0, OptionsFrame.Size.Y.Offset)
                     end
@@ -625,7 +627,7 @@ function DripUI:Window(options)
                 Item.Text = optionName
                 Item.Font = Enum.Font.Gotham
                 Item.TextSize = 10
-                Item.TextColor3 = Color3.fromRGB(153, 153, 153)
+                Item.TextColor3 = Theme.TextDim
                 Item.ZIndex = 1001
                 
                 Item.MouseButton1Click:Connect(function()
@@ -684,7 +686,7 @@ function DripUI:Window(options)
             SliderLabel.Text = sTitle
             SliderLabel.Font = Enum.Font.GothamMedium
             SliderLabel.TextSize = 11
-            SliderLabel.TextColor3 = Color3.fromRGB(221, 221, 221)
+            SliderLabel.TextColor3 = Theme.TextMain
             SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
             SliderLabel.ZIndex = 11
             
@@ -806,7 +808,7 @@ function DripUI:Window(options)
             BtnInstance.Name = "Button_" .. btnTitle
             BtnInstance.Parent = PageScroll
             BtnInstance.Size = UDim2.new(1, 0, 0, 28)
-            BtnInstance.BackgroundColor3 = Theme.ElementBG
+            BtnInstance.BackgroundColor3 = Theme.Container
             BtnInstance.BorderSizePixel = 0
             BtnInstance.Text = btnTitle
             BtnInstance.Font = Enum.Font.GothamBold
