@@ -1,8 +1,7 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.9 FINAL ]]
--- NO ABBREVIATIONS - FULL VERBOSE PROPERTY ASSIGNMENT - NO SHORTCUTS
--- FIXED: Dropdown flickering (Visible = false loop)
--- FIXED: Dropdown persistence on tab switch and collapse
--- RESTORED: Background Color to Theme.Container
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 3.0 ULTIMATE ]]
+-- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, FULL VERBOSE PROPERTY SETTINGS
+-- FIXED: Dropdown Visibility with 0.5s Interval Check Logic
+-- RESTORED: MainFrame Background color to Theme.Container
 -- DESIGN: COMPACT MOBILE (280x280)
 
 local DripUI = {}
@@ -189,7 +188,7 @@ function DripUI:Window(options)
     
     -- Main ScreenGui
     local DripScreenGui = Instance.new("ScreenGui")
-    DripScreenGui.Name = "DripClient_" .. HttpService:GenerateGUID(false)
+    DripScreenGui.Name = "DripClient_MobileUI"
     DripScreenGui.Parent = GetGuiParent()
     DripScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     DripScreenGui.ResetOnSpawn = false
@@ -201,7 +200,7 @@ function DripUI:Window(options)
     MainFrame.Parent = DripScreenGui
     MainFrame.Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.WindowHeight)
     MainFrame.Position = UDim2.new(0.5, -Theme.WindowWidth/2, 0.5, -Theme.WindowHeight/2)
-    MainFrame.BackgroundColor3 = Theme.Container -- Restored Background Color
+    MainFrame.BackgroundColor3 = Theme.Container -- Restored to Container Color
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Active = true
@@ -246,7 +245,7 @@ function DripUI:Window(options)
 
     ApplyDragging(Header, MainFrame)
 
-    -- Tab System Container
+    -- Tab System Bar
     local TabBar = Instance.new("Frame")
     TabBar.Name = "TabBar"
     TabBar.Parent = MainFrame
@@ -261,7 +260,7 @@ function DripUI:Window(options)
     TabLayout.FillDirection = Enum.FillDirection.Horizontal
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
-    -- Content Container
+    -- Content Container (IMPORTANT FOR VISIBILITY CHECK)
     local ContentHolder = Instance.new("Frame")
     ContentHolder.Name = "ContentHolder"
     ContentHolder.Parent = MainFrame
@@ -279,7 +278,7 @@ function DripUI:Window(options)
 
     -- Header Click Collapse
     Header.MouseButton1Click:Connect(function()
-        GlobalCloseDropdown() -- Force close all when collapsing
+        GlobalCloseDropdown()
         self.IsCollapsed = not self.IsCollapsed
         if self.IsCollapsed then
             RunTween(MainFrame, 0.4, { Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.HeaderHeight) })
@@ -296,7 +295,7 @@ function DripUI:Window(options)
     
     -- Tab Selection Logic
     function self:SelectTab(name)
-        GlobalCloseDropdown() -- Force close all on tab change
+        GlobalCloseDropdown()
         for tabName, tabObj in pairs(self.Tabs) do
             if tabName == name then
                 if tabObj.ButtonInstance then
@@ -454,7 +453,7 @@ function DripUI:Window(options)
             }
         end
         
-        -- // ELEMENT: DROPDOWN (FLOATING) //
+        -- // ELEMENT: DROPDOWN (LOGIC FIXED) //
         function tabObject:Dropdown(config)
             local dropConfig = config or {}
             local dropTitle = dropConfig.Title or "Dropdown"
@@ -477,25 +476,25 @@ function DripUI:Window(options)
             DropdownFrame.BorderSizePixel = 0
             DropdownFrame.ZIndex = 15
             
-            local Separator = Instance.new("Frame")
-            Separator.Name = "Separator"
-            Separator.Parent = DropdownFrame
-            Separator.Size = UDim2.new(1, 0, 0, 1)
-            Separator.BackgroundColor3 = Theme.Stroke
-            Separator.BorderSizePixel = 0
+            local SeparatorLine = Instance.new("Frame")
+            SeparatorLine.Name = "Separator"
+            SeparatorLine.Parent = DropdownFrame
+            SeparatorLine.Size = UDim2.new(1, 0, 0, 1)
+            SeparatorLine.BackgroundColor3 = Theme.Stroke
+            SeparatorLine.BorderSizePixel = 0
             
-            local Label = Instance.new("TextLabel")
-            Label.Name = "Label"
-            Label.Parent = DropdownFrame
-            Label.Size = UDim2.new(0, 70, 0, 26)
-            Label.Position = UDim2.new(0, 0, 0, 8)
-            Label.BackgroundTransparency = 1
-            Label.Text = dropTitle
-            Label.Font = Enum.Font.GothamMedium
-            Label.TextSize = 11
-            Label.TextColor3 = Color3.fromRGB(221, 221, 221)
-            Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.ZIndex = 16
+            local DropLabel = Instance.new("TextLabel")
+            DropLabel.Name = "Label"
+            DropLabel.Parent = DropdownFrame
+            DropLabel.Size = UDim2.new(0, 70, 0, 26)
+            DropLabel.Position = UDim2.new(0, 0, 0, 8)
+            DropLabel.BackgroundTransparency = 1
+            DropLabel.Text = dropTitle
+            DropLabel.Font = Enum.Font.GothamMedium
+            DropLabel.TextSize = 11
+            DropLabel.TextColor3 = Color3.fromRGB(221, 221, 221)
+            DropLabel.TextXAlignment = Enum.TextXAlignment.Left
+            DropLabel.ZIndex = 16
             
             local DropBox = Instance.new("TextButton")
             DropBox.Name = "DropBox"
@@ -508,41 +507,41 @@ function DripUI:Window(options)
             DropBox.BorderSizePixel = 0
             DropBox.ZIndex = 17
             
-            local DropCorner = Instance.new("UICorner")
-            DropCorner.CornerRadius = UDim.new(0, 3)
-            DropCorner.Parent = DropBox
+            local DropBoxCorner = Instance.new("UICorner")
+            DropBoxCorner.CornerRadius = UDim.new(0, 3)
+            DropBoxCorner.Parent = DropBox
             
-            local DropStroke = Instance.new("UIStroke")
-            DropStroke.Thickness = 1
-            DropStroke.Color = Color3.fromRGB(51, 51, 51)
-            DropStroke.Parent = DropBox
+            local DropBoxStroke = Instance.new("UIStroke")
+            DropBoxStroke.Thickness = 1
+            DropBoxStroke.Color = Color3.fromRGB(51, 51, 51)
+            DropBoxStroke.Parent = DropBox
             
-            local SelectedText = Instance.new("TextLabel")
-            SelectedText.Name = "SelectedText"
-            SelectedText.Parent = DropBox
-            SelectedText.Size = UDim2.new(1, -24, 1, 0)
-            SelectedText.Position = UDim2.new(0, 8, 0, 0)
-            SelectedText.BackgroundTransparency = 1
-            SelectedText.Text = dropValue
-            SelectedText.Font = Enum.Font.Gotham
-            SelectedText.TextSize = 10
-            SelectedText.TextColor3 = Color3.fromRGB(221, 221, 221)
-            SelectedText.TextXAlignment = Enum.TextXAlignment.Left
-            SelectedText.ZIndex = 18
+            local CurrentValueText = Instance.new("TextLabel")
+            CurrentValueText.Name = "SelectedText"
+            CurrentValueText.Parent = DropBox
+            CurrentValueText.Size = UDim2.new(1, -24, 1, 0)
+            CurrentValueText.Position = UDim2.new(0, 8, 0, 0)
+            CurrentValueText.BackgroundTransparency = 1
+            CurrentValueText.Text = dropValue
+            CurrentValueText.Font = Enum.Font.Gotham
+            CurrentValueText.TextSize = 10
+            CurrentValueText.TextColor3 = Color3.fromRGB(221, 221, 221)
+            CurrentValueText.TextXAlignment = Enum.TextXAlignment.Left
+            CurrentValueText.ZIndex = 18
             
-            local ArrowIcon = Instance.new("ImageLabel")
-            ArrowIcon.Name = "Arrow"
-            ArrowIcon.Parent = DropBox
-            ArrowIcon.Size = UDim2.new(0, 10, 0, 10)
-            ArrowIcon.Position = UDim2.new(1, -18, 0.5, -5)
-            ArrowIcon.BackgroundTransparency = 1
-            ArrowIcon.Image = "rbxassetid://6034818372"
-            ArrowIcon.ImageColor3 = Theme.Accent
-            ArrowIcon.ZIndex = 18
+            local ArrowIconLabel = Instance.new("ImageLabel")
+            ArrowIconLabel.Name = "Arrow"
+            ArrowIconLabel.Parent = DropBox
+            ArrowIconLabel.Size = UDim2.new(0, 10, 0, 10)
+            ArrowIconLabel.Position = UDim2.new(1, -18, 0.5, -5)
+            ArrowIconLabel.BackgroundTransparency = 1
+            ArrowIconLabel.Image = "rbxassetid://6034818372"
+            ArrowIconLabel.ImageColor3 = Theme.Accent
+            ArrowIconLabel.ZIndex = 18
             
-            -- FLOATING OPTIONS CONTAINER
+            -- FLOATING OPTIONS (Parented to ScreenGui)
             local OptionsFrame = Instance.new("Frame")
-            OptionsFrame.Name = "DropdownOptions_" .. dropTitle
+            OptionsFrame.Name = "DropdownFloating_" .. dropTitle
             OptionsFrame.Parent = DripScreenGui
             OptionsFrame.Size = UDim2.new(0, 205, 0, 0)
             OptionsFrame.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
@@ -551,23 +550,23 @@ function DripUI:Window(options)
             OptionsFrame.Visible = false
             OptionsFrame.ZIndex = 1000
             
-            local OptCorner = Instance.new("UICorner")
-            OptCorner.CornerRadius = UDim.new(0, 3)
-            OptCorner.Parent = OptionsFrame
+            local OptionsCorner = Instance.new("UICorner")
+            OptionsCorner.CornerRadius = UDim.new(0, 3)
+            OptionsCorner.Parent = OptionsFrame
             
-            local OptStroke = Instance.new("UIStroke")
-            OptStroke.Thickness = 1
-            OptStroke.Color = Theme.Stroke
-            OptStroke.Parent = OptionsFrame
+            local OptionsStroke = Instance.new("UIStroke")
+            OptionsStroke.Thickness = 1
+            OptionsStroke.Color = Theme.Stroke
+            OptionsStroke.Parent = OptionsFrame
             
-            local OptLayout = Instance.new("UIListLayout")
-            OptLayout.Parent = OptionsFrame
-            OptLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            local OptionsLayout = Instance.new("UIListLayout")
+            OptionsLayout.Parent = OptionsFrame
+            OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
             
             local function CloseThisMenu()
                 isMenuOpen = false
                 RunTween(OptionsFrame, 0.2, { Size = UDim2.new(0, DropBox.AbsoluteSize.X, 0, 0) })
-                RunTween(ArrowIcon, 0.2, { Rotation = 0 })
+                RunTween(ArrowIconLabel, 0.2, { Rotation = 0 })
                 task.delay(0.2, function() 
                     OptionsFrame.Visible = false 
                 end)
@@ -577,90 +576,90 @@ function DripUI:Window(options)
                 if isMenuOpen then
                     CloseThisMenu()
                 else
-                    GlobalCloseDropdown() -- Close other menus
+                    GlobalCloseDropdown()
                     self.ActiveDropdown = { Close = CloseThisMenu }
                     isMenuOpen = true
                     
-                    local absPos = DropBox.AbsolutePosition
-                    local absSize = DropBox.AbsoluteSize
+                    local absolutePosition = DropBox.AbsolutePosition
+                    local absoluteSize = DropBox.AbsoluteSize
                     
-                    OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
-                    OptionsFrame.Size = UDim2.new(0, absSize.X, 0, 0)
+                    OptionsFrame.Position = UDim2.fromOffset(absolutePosition.X, absolutePosition.Y + absoluteSize.Y + 2)
+                    OptionsFrame.Size = UDim2.new(0, absoluteSize.X, 0, 0)
                     OptionsFrame.Visible = true
                     
-                    local fullHeight = math.min(#dropOptions * 24, 150)
-                    RunTween(OptionsFrame, 0.3, { Size = UDim2.new(0, absSize.X, 0, fullHeight) })
-                    RunTween(ArrowIcon, 0.3, { Rotation = 180 })
+                    local maxVisibleItems = 6
+                    local itemHeight = 24
+                    local targetHeight = math.min(#dropOptions * itemHeight, maxVisibleItems * itemHeight)
+                    
+                    RunTween(OptionsFrame, 0.3, { Size = UDim2.new(0, absoluteSize.X, 0, targetHeight) })
+                    RunTween(ArrowIconLabel, 0.3, { Rotation = 180 })
                 end
             end
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- Visibility Sync and Position Update
-            local positionUpdateConn = RunService.RenderStepped:Connect(function()
-                if isMenuOpen then
-                    -- เช็คสถานะอย่างละเอียดเพื่อความแม่นยำ
-                    local isTabActive = (self.SelectedTabName == name)
-                    local isWindowVisible = (MainFrame.Visible == true)
-                    local isNotCollapsed = (self.IsCollapsed == false)
-                    local isPageVisible = (PageScroll.Visible == true)
+            -- [[ LOGIC: 0.5S INTERVAL VISIBILITY CHECK ]]
+            task.spawn(function()
+                while task.wait(0.5) do
+                    if not DropBox or not DropBox.Parent then break end
                     
-                    -- หากเงื่อนไขพื้นฐานไม่ผ่าน ให้ซ่อน OptionsFrame ทันทีโดยไม่เปลี่ยนสถานะ isMenuOpen
-                    if not isTabActive or not isWindowVisible or not isNotCollapsed or not isPageVisible or not DropBox.Parent then
-                        OptionsFrame.Visible = false
-                    else
-                        -- หากเงื่อนไขผ่าน และเมนูควรเปิดอยู่ ให้แสดงผลและอัปเดตตำแหน่ง
-                        OptionsFrame.Visible = true
+                    if isMenuOpen then
+                        -- ตรวจสอบ ContentHolder และ Page Visibility ตามโจทย์
+                        local isWindowOpen = (MainFrame.Visible == true) and (not self.IsCollapsed)
+                        local isHolderVisible = (ContentHolder.Visible == true)
+                        local isPageActive = (PageScroll.Visible == true)
                         
-                        local currentAbsPos = DropBox.AbsolutePosition
-                        local currentAbsSize = DropBox.AbsoluteSize
-                        
-                        -- ตั้งค่าตำแหน่ง Absolute ให้เกาะติดปุ่ม
-                        OptionsFrame.Position = UDim2.fromOffset(currentAbsPos.X, currentAbsPos.Y + currentAbsSize.Y + 2)
-                        
-                        -- ตรวจสอบขนาดความกว้าง
-                        if OptionsFrame.Size.X.Offset ~= currentAbsSize.X then
-                             OptionsFrame.Size = UDim2.new(0, currentAbsSize.X, 0, OptionsFrame.Size.Y.Offset)
+                        if not isWindowOpen or not isHolderVisible or not isPageActive then
+                            -- ถ้าอย่างใดอย่างหนึ่งถูกซ่อน ให้สั่ง Visible = false ทันที
+                            OptionsFrame.Visible = false
+                        else
+                            -- ถ้ากลับมาแสดงผลปกติ และเมนูยังถูกเปิดอยู่ ให้แสดงผลต่อ
+                            OptionsFrame.Visible = true
+                            
+                            -- อัปเดตตำแหน่งกรณีลากหน้าต่าง
+                            local absPos = DropBox.AbsolutePosition
+                            local absSize = DropBox.AbsoluteSize
+                            OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
+                            OptionsFrame.Size = UDim2.new(0, absSize.X, 0, OptionsFrame.Size.Y.Offset)
                         end
-                    end
-                else
-                    -- ถ้า isMenuOpen เป็น false ต้องมั่นใจว่า Invisible
-                    if OptionsFrame.Visible then
-                        OptionsFrame.Visible = false
+                    else
+                        if OptionsFrame.Visible then 
+                            OptionsFrame.Visible = false 
+                        end
                     end
                 end
             end)
 
             for _, optionName in ipairs(dropOptions) do
-                local Item = Instance.new("TextButton")
-                Item.Name = "Item_" .. optionName
-                Item.Parent = OptionsFrame
-                Item.Size = UDim2.new(1, 0, 0, 24)
-                Item.BackgroundTransparency = 1
-                Item.BorderSizePixel = 0
-                Item.Text = optionName
-                Item.Font = Enum.Font.Gotham
-                Item.TextSize = 10
-                Item.TextColor3 = Color3.fromRGB(153, 153, 153)
-                Item.ZIndex = 1001
+                local ItemButton = Instance.new("TextButton")
+                ItemButton.Name = "OptionItem_" .. optionName
+                ItemButton.Parent = OptionsFrame
+                ItemButton.Size = UDim2.new(1, 0, 0, 24)
+                ItemButton.BackgroundTransparency = 1
+                ItemButton.BorderSizePixel = 0
+                ItemButton.Text = optionName
+                ItemButton.Font = Enum.Font.Gotham
+                ItemButton.TextSize = 10
+                ItemButton.TextColor3 = Color3.fromRGB(153, 153, 153)
+                ItemButton.ZIndex = 1001
                 
-                Item.MouseButton1Click:Connect(function()
+                ItemButton.MouseButton1Click:Connect(function()
                     dropValue = optionName
-                    SelectedText.Text = optionName
+                    CurrentValueText.Text = optionName
                     CloseThisMenu()
                     SavedSettings[dropTitle] = optionName
                     SaveCurrentConfig()
                     task.spawn(function()
-                        local s, e = pcall(dropCallback, optionName)
-                        if not s then warn("DripUI Dropdown Callback Error: "..tostring(e)) end
+                        local success, err = pcall(dropCallback, optionName)
+                        if not success then warn("Dropdown Callback Error: " .. tostring(err)) end
                     end)
                 end)
                 
-                Item.MouseEnter:Connect(function() 
-                    RunTween(Item, 0.1, { BackgroundTransparency = 0.9, BackgroundColor3 = Color3.new(1, 1, 1) })
+                ItemButton.MouseEnter:Connect(function() 
+                    RunTween(ItemButton, 0.1, { BackgroundTransparency = 0.9, BackgroundColor3 = Color3.new(1, 1, 1) })
                 end)
-                Item.MouseLeave:Connect(function() 
-                    RunTween(Item, 0.1, { BackgroundTransparency = 1 }) 
+                ItemButton.MouseLeave:Connect(function() 
+                    RunTween(ItemButton, 0.1, { BackgroundTransparency = 1 }) 
                 end)
             end
 
@@ -669,7 +668,7 @@ function DripUI:Window(options)
             end
             
             return {
-                Set = function(_, v) SelectedText.Text = v dropValue = v end,
+                Set = function(_, v) CurrentValueText.Text = v dropValue = v end,
                 Get = function() return dropValue end
             }
         end
@@ -818,42 +817,42 @@ function DripUI:Window(options)
             local btnTitle = btnConfig.Title or "Button"
             local btnCallback = btnConfig.Callback or function() end
             
-            local BtnInstance = Instance.new("TextButton")
-            BtnInstance.Name = "Button_" .. btnTitle
-            BtnInstance.Parent = PageScroll
-            BtnInstance.Size = UDim2.new(1, 0, 0, 28)
-            BtnInstance.BackgroundColor3 = Theme.ElementBG
-            BtnInstance.BorderSizePixel = 0
-            BtnInstance.Text = btnTitle
-            BtnInstance.Font = Enum.Font.GothamBold
-            BtnInstance.TextSize = 11
-            BtnInstance.TextColor3 = Theme.TextMain
-            BtnInstance.AutoButtonColor = true
-            BtnInstance.ZIndex = 10
+            local ButtonInstance = Instance.new("TextButton")
+            ButtonInstance.Name = "Button_" .. btnTitle
+            ButtonInstance.Parent = PageScroll
+            ButtonInstance.Size = UDim2.new(1, 0, 0, 28)
+            ButtonInstance.BackgroundColor3 = Theme.ElementBG
+            ButtonInstance.BorderSizePixel = 0
+            ButtonInstance.Text = btnTitle
+            ButtonInstance.Font = Enum.Font.GothamBold
+            ButtonInstance.TextSize = 11
+            ButtonInstance.TextColor3 = Theme.TextMain
+            ButtonInstance.AutoButtonColor = true
+            ButtonInstance.ZIndex = 10
             
-            local BtnCorner = Instance.new("UICorner")
-            BtnCorner.CornerRadius = UDim.new(0, 4)
-            BtnCorner.Parent = BtnInstance
+            local ButtonCorner = Instance.new("UICorner")
+            ButtonCorner.CornerRadius = UDim.new(0, 4)
+            ButtonCorner.Parent = ButtonInstance
             
-            local BtnStroke = Instance.new("UIStroke")
-            BtnStroke.Thickness = 1
-            BtnStroke.Color = Theme.Stroke
-            BtnStroke.Parent = BtnInstance
+            local ButtonStroke = Instance.new("UIStroke")
+            ButtonStroke.Thickness = 1
+            ButtonStroke.Color = Theme.Stroke
+            ButtonStroke.Parent = ButtonInstance
             
-            BtnInstance.MouseButton1Click:Connect(function()
+            ButtonInstance.MouseButton1Click:Connect(function()
                 task.spawn(function()
                     local ok, err = pcall(btnCallback)
-                    if not ok then warn("DripUI Button Error: " .. tostring(err)) end
+                    if not ok then warn("Button Error: " .. tostring(err)) end
                 end)
-                local originalColor = BtnInstance.BackgroundColor3
-                RunTween(BtnInstance, 0.1, { BackgroundColor3 = Theme.Accent })
+                local originalColor = ButtonInstance.BackgroundColor3
+                RunTween(ButtonInstance, 0.1, { BackgroundColor3 = Theme.Accent })
                 task.delay(0.1, function() 
-                    RunTween(BtnInstance, 0.2, { BackgroundColor3 = originalColor }) 
+                    RunTween(ButtonInstance, 0.2, { BackgroundColor3 = originalColor }) 
                 end)
             end)
             
             return {
-                SetTitle = function(_, t) BtnInstance.Text = t end
+                SetTitle = function(_, t) ButtonInstance.Text = t end
             }
         end
         
