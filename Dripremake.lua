@@ -1,6 +1,7 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 3.0 ULTIMATE ]]
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 3.1 ULTIMATE ]]
 -- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, FULL VERBOSE PROPERTY SETTINGS
--- FIXED: Dropdown Visibility with 0.5s Interval Check Logic
+-- FIXED: High-speed Dropdown Visibility Sync (Every Frame)
+-- FIXED: Parent-based Visibility logic (ContentHolder & Page Check)
 -- RESTORED: MainFrame Background color to Theme.Container
 -- DESIGN: COMPACT MOBILE (280x280)
 
@@ -188,7 +189,7 @@ function DripUI:Window(options)
     
     -- Main ScreenGui
     local DripScreenGui = Instance.new("ScreenGui")
-    DripScreenGui.Name = "DripClient_MobileUI"
+    DripScreenGui.Name = "DripClient_MobileUI_Ultimate"
     DripScreenGui.Parent = GetGuiParent()
     DripScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     DripScreenGui.ResetOnSpawn = false
@@ -200,7 +201,7 @@ function DripUI:Window(options)
     MainFrame.Parent = DripScreenGui
     MainFrame.Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.WindowHeight)
     MainFrame.Position = UDim2.new(0.5, -Theme.WindowWidth/2, 0.5, -Theme.WindowHeight/2)
-    MainFrame.BackgroundColor3 = Theme.Container -- Restored to Container Color
+    MainFrame.BackgroundColor3 = Theme.Container -- RESTORED BACKGROUND COLOR
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Active = true
@@ -453,7 +454,7 @@ function DripUI:Window(options)
             }
         end
         
-        -- // ELEMENT: DROPDOWN (LOGIC FIXED) //
+        -- // ELEMENT: DROPDOWN (HIGH SPEED SYNC) //
         function tabObject:Dropdown(config)
             local dropConfig = config or {}
             local dropTitle = dropConfig.Title or "Dropdown"
@@ -598,34 +599,48 @@ function DripUI:Window(options)
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- [[ LOGIC: 0.5S INTERVAL VISIBILITY CHECK ]]
-            task.spawn(function()
-                while task.wait(0.5) do
-                    if not DropBox or not DropBox.Parent then break end
+            -- [[ LOGIC: HIGH-SPEED HIERARCHY CHECK ]]
+            local visibilitySyncConnection
+            visibilitySyncConnection = RunService.RenderStepped:Connect(function()
+                if not DropBox or not DropBox.Parent then 
+                    OptionsFrame:Destroy()
+                    visibilitySyncConnection:Disconnect()
+                    return 
+                end
+                
+                if isMenuOpen then
+                    -- ตรวจสอบเงื่อนไขความถูกต้องของ Parent Hierarchy
+                    local isMainVisible = (MainFrame.Visible == true)
+                    local isNotCollapsed = (self.IsCollapsed == false)
+                    local isHolderVisible = (ContentHolder.Visible == true)
+                    local isPageActive = (PageScroll.Visible == true)
                     
-                    if isMenuOpen then
-                        -- ตรวจสอบ ContentHolder และ Page Visibility ตามโจทย์
-                        local isWindowOpen = (MainFrame.Visible == true) and (not self.IsCollapsed)
-                        local isHolderVisible = (ContentHolder.Visible == true)
-                        local isPageActive = (PageScroll.Visible == true)
-                        
-                        if not isWindowOpen or not isHolderVisible or not isPageActive then
-                            -- ถ้าอย่างใดอย่างหนึ่งถูกซ่อน ให้สั่ง Visible = false ทันที
-                            OptionsFrame.Visible = false
-                        else
-                            -- ถ้ากลับมาแสดงผลปกติ และเมนูยังถูกเปิดอยู่ ให้แสดงผลต่อ
-                            OptionsFrame.Visible = true
-                            
-                            -- อัปเดตตำแหน่งกรณีลากหน้าต่าง
-                            local absPos = DropBox.AbsolutePosition
-                            local absSize = DropBox.AbsoluteSize
-                            OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
-                            OptionsFrame.Size = UDim2.new(0, absSize.X, 0, OptionsFrame.Size.Y.Offset)
+                    -- ถ้าเงื่อนไขใดเงื่อนไขหนึ่งเป็นเท็จ ให้ซ่อนทันที
+                    if not isMainVisible or not isNotCollapsed or not isHolderVisible or not isPageActive then
+                        if OptionsFrame.Visible then
+                             OptionsFrame.Visible = false
                         end
                     else
-                        if OptionsFrame.Visible then 
-                            OptionsFrame.Visible = false 
+                        -- ถ้าทุกอย่างปกติ ให้แสดงผลและอัปเดตตำแหน่งตามปุ่ม
+                        if not OptionsFrame.Visible then
+                             OptionsFrame.Visible = true
                         end
+                        
+                        local currentAbsPos = DropBox.AbsolutePosition
+                        local currentAbsSize = DropBox.AbsoluteSize
+                        
+                        -- ตั้งค่าตำแหน่งเกาะติด
+                        OptionsFrame.Position = UDim2.fromOffset(currentAbsPos.X, currentAbsPos.Y + currentAbsSize.Y + 2)
+                        
+                        -- อัปเดตขนาดกรณีมีการยืดหยุ่น
+                        if OptionsFrame.Size.X.Offset ~= currentAbsSize.X then
+                             OptionsFrame.Size = UDim2.new(0, currentAbsSize.X, 0, OptionsFrame.Size.Y.Offset)
+                        end
+                    end
+                else
+                    -- ถ้าเมนูไม่ได้ถูกเปิดผ่านโค้ด ต้องมั่นใจว่า Invisible
+                    if OptionsFrame.Visible then
+                        OptionsFrame.Visible = false
                     end
                 end
             end)
