@@ -1,6 +1,6 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.7 ULTIMATE ]]
--- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, FULL DETAILED PROPERTY SETTINGS
--- FIXED: Dropdown visibility on collapse
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.8 ULTIMATE ]]
+-- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, FULL VERBOSE PROPERTY SETTINGS
+-- FIXED: Dropdown visibility sync with MainFrame, Tabs, and Collapse state
 -- FIXED: MainFrame Background color restored to Theme.Container
 -- DESIGN: COMPACT MOBILE (280x280)
 
@@ -25,7 +25,7 @@ local function EnsureConfigFolder()
         return isfolder(ConfigFolder)
     end)
     if success and not exists then
-        pcall(function()
+        local makeSuccess, makeErr = pcall(function()
             makefolder(ConfigFolder)
         end)
     end
@@ -145,9 +145,11 @@ local function ApplyDragging(dragTarget, moveTarget)
             dragStart = input.Position
             startPos = moveTarget.Position
             
-            input.Changed:Connect(function()
+            local changedConn
+            changedConn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
+                    changedConn:Disconnect()
                 end
             end)
         end
@@ -198,7 +200,7 @@ function DripUI:Window(options)
     MainFrame.Parent = DripScreenGui
     MainFrame.Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.WindowHeight)
     MainFrame.Position = UDim2.new(0.5, -Theme.WindowWidth/2, 0.5, -Theme.WindowHeight/2)
-    MainFrame.BackgroundColor3 = Theme.Container -- CHANGED BACK FROM Theme.Background
+    MainFrame.BackgroundColor3 = Theme.Container -- Restored Background Color
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Active = true
@@ -276,7 +278,7 @@ function DripUI:Window(options)
 
     -- Header Click Collapse
     Header.MouseButton1Click:Connect(function()
-        GlobalCloseDropdown() -- FIXED: Ensure open dropdowns close when collapsing
+        GlobalCloseDropdown() -- Force close floating elements on collapse
         self.IsCollapsed = not self.IsCollapsed
         if self.IsCollapsed then
             RunTween(MainFrame, 0.4, { Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.HeaderHeight) })
@@ -293,7 +295,7 @@ function DripUI:Window(options)
     
     -- Tab Selection Logic
     function self:SelectTab(name)
-        GlobalCloseDropdown()
+        GlobalCloseDropdown() -- Force close floating elements on tab switch
         for tabName, tabObj in pairs(self.Tabs) do
             if tabName == name then
                 if tabObj.ButtonInstance then
@@ -593,24 +595,35 @@ function DripUI:Window(options)
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- อัปเดตตำแหน่งตามปุ่มเมื่อมีการขยับหน้าต่าง (FIXED POSITION UPDATING)
+            -- Visibility Sync and Position Update
             local positionUpdateConn = RunService.RenderStepped:Connect(function()
-                if isMenuOpen and OptionsFrame and OptionsFrame.Visible then
-                    -- ตรวจสอบว่า DropBox ยังอยู่ใน Game หรือไม่
-                    if not DropBox or not DropBox.Parent or not MainFrame or not MainFrame.Visible then
+                if isMenuOpen and OptionsFrame then
+                    -- CRITICAL: ตรวจสอบสถานะการปิดหน้าต่าง หรือสลับ Tab
+                    local isTabActive = (self.SelectedTabName == name)
+                    local isWindowVisible = (MainFrame.Visible == true)
+                    local isNotCollapsed = (self.IsCollapsed == false)
+                    local isPageVisible = (PageScroll.Visible == true)
+                    
+                    -- หากสถานะใดสถานะหนึ่งไม่ถูกต้อง ให้ปิด Dropdown ทันที
+                    if not isTabActive or not isWindowVisible or not isNotCollapsed or not isPageVisible or not DropBox.Parent then
                         CloseThisMenu()
                         return
                     end
                     
+                    -- อัปเดตตำแหน่งตามปุ่ม
                     local currentAbsPos = DropBox.AbsolutePosition
                     local currentAbsSize = DropBox.AbsoluteSize
                     
-                    -- อัปเดตตำแหน่งกล่องตัวเลือกให้ตามปุ่ม DropBox เสมอ
+                    OptionsFrame.Visible = true -- ตรวจสอบให้แน่ใจว่ามันมองเห็น
                     OptionsFrame.Position = UDim2.fromOffset(currentAbsPos.X, currentAbsPos.Y + currentAbsSize.Y + 2)
                     
-                    -- ปรับขนาดความกว้างให้ตรงกับปุ่มเผื่อกรณีลากไปมา
                     if OptionsFrame.Size.X.Offset ~= currentAbsSize.X then
                          OptionsFrame.Size = UDim2.new(0, currentAbsSize.X, 0, OptionsFrame.Size.Y.Offset)
+                    end
+                else
+                    -- ถ้าปิดอยู่ ต้องมั่นใจว่า Invisible
+                    if OptionsFrame.Visible and not isMenuOpen then
+                        OptionsFrame.Visible = false
                     end
                 end
             end)
@@ -762,7 +775,8 @@ function DripUI:Window(options)
                 end
             end)
             
-            UserInputService.InputEnded:Connect(function(input)
+            local endedConn
+            endedConn = UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     draggingSlider = false
                 end
@@ -874,7 +888,7 @@ function DripUI:Window(options)
     end
     
     function self:ToggleVisibility()
-        GlobalCloseDropdown()
+        GlobalCloseDropdown() -- Close on hide
         MainFrame.Visible = not MainFrame.Visible
     end
     
