@@ -1,6 +1,7 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.5 ULTIMATE ]]
--- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, NO SHORTCUTS
--- FIXED: DROPDOWN CLIPPING & INDEX FUNCTION ERROR
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 2.6 ULTIMATE FIXED ]]
+-- NO ABBREVIATIONS - FULL VERBOSE PROPERTY ASSIGNMENT
+-- FIXED: IsLoaded Error (Changed to .Parent check)
+-- FIXED: Floating Dropdown Position Syncing
 -- DESIGN: COMPACT MOBILE (280x280)
 
 local DripUI = {}
@@ -37,7 +38,7 @@ local function SaveConfig(data, id)
         return HttpService:JSONEncode(data)
     end)
     if success then
-        pcall(function()
+        local writeSuccess, writeErr = pcall(function()
             writefile(filePath, json)
         end)
     end
@@ -106,7 +107,7 @@ local function RunTween(instance, duration, properties)
     return tweenObject
 end
 
--- // THEME DATA //
+-- // THEME DATA (Compact) //
 local Theme = {
     Background = Color3.fromRGB(10, 10, 10),
     Container = Color3.fromRGB(26, 26, 26),
@@ -197,7 +198,7 @@ function DripUI:Window(options)
     MainFrame.Parent = DripScreenGui
     MainFrame.Size = UDim2.new(0, Theme.WindowWidth, 0, Theme.WindowHeight)
     MainFrame.Position = UDim2.new(0.5, -Theme.WindowWidth/2, 0.5, -Theme.WindowHeight/2)
-    MainFrame.BackgroundColor3 = Theme.Container
+    MainFrame.BackgroundColor3 = Theme.Background
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Active = true
@@ -592,16 +593,25 @@ function DripUI:Window(options)
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- Keep position updated during drag
+            -- อัปเดตตำแหน่งตามปุ่มเมื่อมีการขยับหน้าต่าง (FIXED POSITION UPDATING)
             local positionUpdateConn = RunService.RenderStepped:Connect(function()
-                if isMenuOpen and OptionsFrame.Visible then
-                    if not DropBox.IsLoaded or not MainFrame.Visible then
+                if isMenuOpen and OptionsFrame and OptionsFrame.Visible then
+                    -- ตรวจสอบว่า DropBox ยังอยู่ใน Game หรือไม่ (ใช้ .Parent แทน .IsLoaded)
+                    if not DropBox or not DropBox.Parent or not MainFrame or not MainFrame.Visible then
                         CloseThisMenu()
                         return
                     end
-                    local absPos = DropBox.AbsolutePosition
-                    local absSize = DropBox.AbsoluteSize
-                    OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
+                    
+                    local currentAbsPos = DropBox.AbsolutePosition
+                    local currentAbsSize = DropBox.AbsoluteSize
+                    
+                    -- อัปเดตตำแหน่งกล่องตัวเลือกให้ตามปุ่ม DropBox เสมอ
+                    OptionsFrame.Position = UDim2.fromOffset(currentAbsPos.X, currentAbsPos.Y + currentAbsSize.Y + 2)
+                    
+                    -- ปรับขนาดความกว้างให้ตรงกับปุ่มเผื่อกรณีลากไปมา
+                    if OptionsFrame.Size.X.Offset ~= currentAbsSize.X then
+                         OptionsFrame.Size = UDim2.new(0, currentAbsSize.X, 0, OptionsFrame.Size.Y.Offset)
+                    end
                 end
             end)
 
@@ -625,7 +635,8 @@ function DripUI:Window(options)
                     SavedSettings[dropTitle] = optionName
                     SaveCurrentConfig()
                     task.spawn(function()
-                        pcall(dropCallback, optionName)
+                        local s, e = pcall(dropCallback, optionName)
+                        if not s then warn("DripUI Dropdown Callback Error: "..tostring(e)) end
                     end)
                 end)
                 
