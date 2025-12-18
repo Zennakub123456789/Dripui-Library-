@@ -1,6 +1,6 @@
--- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 3.1 FAST RESPONSE ]]
--- COMPLETE IMPLEMENTATION: NO ABBREVIATIONS, FULL VERBOSE PROPERTY SETTINGS
--- ADJUSTED: Dropdown Visibility Check Interval set to 0.05s for instant reaction
+-- [[ DRIP CLIENT | MOBILE GUI LIBRARY - VERSION 3.2 SMART DROPDOWN ]]
+-- FEATURE: Smart Dropdown Direction (Detects screen bottom edge and opens upwards)
+-- LOGIC: 0.05s Interval Check + Full Verbose Implementation
 -- DESIGN: COMPACT MOBILE (280x280)
 
 local DripUI = {}
@@ -259,7 +259,7 @@ function DripUI:Window(options)
     TabLayout.FillDirection = Enum.FillDirection.Horizontal
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
-    -- Content Container (IMPORTANT FOR VISIBILITY CHECK)
+    -- Content Container
     local ContentHolder = Instance.new("Frame")
     ContentHolder.Name = "ContentHolder"
     ContentHolder.Parent = MainFrame
@@ -452,7 +452,7 @@ function DripUI:Window(options)
             }
         end
         
-        -- // ELEMENT: DROPDOWN (LOGIC FIXED - 0.05S) //
+        -- // ELEMENT: DROPDOWN (SMART DIRECTION) //
         function tabObject:Dropdown(config)
             local dropConfig = config or {}
             local dropTitle = dropConfig.Title or "Dropdown"
@@ -466,6 +466,7 @@ function DripUI:Window(options)
             end
             
             local isMenuOpen = false
+            local isOpeningUp = false -- Track direction
             
             local DropdownFrame = Instance.new("Frame")
             DropdownFrame.Name = "Dropdown_" .. dropTitle
@@ -582,13 +583,33 @@ function DripUI:Window(options)
                     local absolutePosition = DropBox.AbsolutePosition
                     local absoluteSize = DropBox.AbsoluteSize
                     
-                    OptionsFrame.Position = UDim2.fromOffset(absolutePosition.X, absolutePosition.Y + absoluteSize.Y + 2)
-                    OptionsFrame.Size = UDim2.new(0, absoluteSize.X, 0, 0)
-                    OptionsFrame.Visible = true
-                    
+                    -- SMART DIRECTION CALCULATION
                     local maxVisibleItems = 6
                     local itemHeight = 24
                     local targetHeight = math.min(#dropOptions * itemHeight, maxVisibleItems * itemHeight)
+                    
+                    local screenSize = DripScreenGui.AbsoluteSize
+                    local spaceBelow = screenSize.Y - (absolutePosition.Y + absoluteSize.Y + 10)
+                    
+                    -- Check if space below is less than target height
+                    if spaceBelow < targetHeight then
+                        isOpeningUp = true
+                    else
+                        isOpeningUp = false
+                    end
+                    
+                    if isOpeningUp then
+                        -- Position ABOVE the button
+                        OptionsFrame.AnchorPoint = Vector2.new(0, 1) -- Bottom-Left anchor for growing upwards
+                        OptionsFrame.Position = UDim2.fromOffset(absolutePosition.X, absolutePosition.Y - 2)
+                    else
+                        -- Position BELOW the button
+                        OptionsFrame.AnchorPoint = Vector2.new(0, 0) -- Top-Left anchor for growing downwards
+                        OptionsFrame.Position = UDim2.fromOffset(absolutePosition.X, absolutePosition.Y + absoluteSize.Y + 2)
+                    end
+                    
+                    OptionsFrame.Size = UDim2.new(0, absoluteSize.X, 0, 0)
+                    OptionsFrame.Visible = true
                     
                     RunTween(OptionsFrame, 0.3, { Size = UDim2.new(0, absoluteSize.X, 0, targetHeight) })
                     RunTween(ArrowIconLabel, 0.3, { Rotation = 180 })
@@ -597,7 +618,7 @@ function DripUI:Window(options)
             
             DropBox.MouseButton1Click:Connect(ToggleThisMenu)
             
-            -- [[ LOGIC: 0.05S INTERVAL VISIBILITY CHECK ]]
+            -- [[ LOGIC: 0.05S INTERVAL VISIBILITY CHECK & POS UPDATE ]]
             task.spawn(function()
                 while task.wait(0.05) do -- Fast interval check
                     if not DropBox or not DropBox.Parent then break end
@@ -612,11 +633,22 @@ function DripUI:Window(options)
                             OptionsFrame.Visible = false
                         else
                             OptionsFrame.Visible = true
-                            -- Update Position
+                            -- Update Position Live (Respecting Direction)
                             local absPos = DropBox.AbsolutePosition
                             local absSize = DropBox.AbsoluteSize
-                            OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
-                            OptionsFrame.Size = UDim2.new(0, absSize.X, 0, OptionsFrame.Size.Y.Offset)
+                            
+                            if isOpeningUp then
+                                OptionsFrame.AnchorPoint = Vector2.new(0, 1)
+                                OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y - 2)
+                            else
+                                OptionsFrame.AnchorPoint = Vector2.new(0, 0)
+                                OptionsFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y + absSize.Y + 2)
+                            end
+                            
+                            -- Sync Width
+                            if OptionsFrame.Size.X.Offset ~= absSize.X then
+                                 OptionsFrame.Size = UDim2.new(0, absSize.X, 0, OptionsFrame.Size.Y.Offset)
+                            end
                         end
                     else
                         if OptionsFrame.Visible then 
