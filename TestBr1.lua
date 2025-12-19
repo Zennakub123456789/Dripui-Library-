@@ -1,8 +1,9 @@
--- [[ BR MODS UI LIBRARY - VERSION 2.0 ULTRA VERBOSE ]]
--- STYLE: BR MODS ORIGINAL (Double Frame, Cyan Theme)
--- DROPDOWN: Expanding (In-Layout) - Pushes content down
--- WINDOW: Drag Only (No Collapse on Title)
--- CODE STYLE: Fully Expanded Property Assignments (No shortcuts)
+-- [[ BR MODS UI LIBRARY - VERSION 3.0 FINAL FIX ]]
+-- STYLE: BR MODS ORIGINAL (Cyan Border Toggles, Double Frame)
+-- TAB SYSTEM: Scrolling Tabs (For many tabs support)
+-- DROPDOWN: Expanding (In-Layout)
+-- FIXED: 'Unable to cast value' Error & Visual Bugs
+-- CODE STYLE: Ultra Verbose (No shortcuts)
 
 local BrMods = {}
 
@@ -94,9 +95,12 @@ local function ProtectInstance(instance)
 end
 
 local function RunTween(instance, duration, properties)
-    -- FIXED: Check if instance exists to prevent "Unable to cast value to Object"
-    if not instance or not instance.Parent then 
-        return nil 
+    -- FIXED: Strict check to prevent "Unable to cast value to Object" error
+    if typeof(instance) ~= "Instance" then
+        return nil
+    end
+    if not instance.Parent then
+        return nil
     end
     
     local tweenInfo = TweenInfo.new(
@@ -119,11 +123,12 @@ end
 -- // THEME COLORS //
 local Colors = {
     Cyan = Color3.fromRGB(0, 219, 197),
-    Dark = Color3.fromRGB(15, 15, 15),
+    Dark = Color3.fromRGB(20, 20, 20), -- Lighter dark for contrast
+    Background = Color3.fromRGB(15, 15, 15),
     Black = Color3.fromRGB(0, 0, 0),
     Grey = Color3.fromRGB(56, 56, 72),
     SliderFill = Color3.fromRGB(123, 146, 185),
-    BorderGrey = Color3.fromRGB(110, 110, 110),
+    BorderGrey = Color3.fromRGB(60, 60, 60),
     TextWhite = Color3.new(1, 1, 1),
     TextGrey = Color3.fromRGB(150, 150, 150)
 }
@@ -205,7 +210,7 @@ function BrMods:Window(options)
     MainFrame.Parent = ScreenGui
     MainFrame.Size = UDim2.new(0, 250, 0, 325)
     MainFrame.Position = UDim2.new(0.5, -125, 0.5, -162)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Outer Border Color
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
     
@@ -217,10 +222,10 @@ function BrMods:Window(options)
     local MainInner = Instance.new("Frame")
     MainInner.Name = "Inner"
     MainInner.Parent = MainFrame
-    MainInner.Size = UDim2.new(1, -2, 1, -2)
+    MainInner.Size = UDim2.new(1, -2, 1, -2) -- Create 1px Border Effect
     MainInner.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainInner.AnchorPoint = Vector2.new(0.5, 0.5)
-    MainInner.BackgroundColor3 = Colors.Dark
+    MainInner.BackgroundColor3 = Colors.Background
     MainInner.BorderSizePixel = 0
     MainInner.ClipsDescendants = true
     
@@ -228,7 +233,7 @@ function BrMods:Window(options)
     InnerCorner.CornerRadius = UDim.new(0, 15)
     InnerCorner.Parent = MainInner
     
-    -- Title Label (Static, Drag Target)
+    -- Title Label
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Name = "TitleLabel"
     TitleLabel.Parent = MainInner
@@ -237,22 +242,23 @@ function BrMods:Window(options)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Text = "B R   M O D S"
     TitleLabel.Font = Enum.Font.GothamBlack
-    TitleLabel.TextSize = 22
+    TitleLabel.TextSize = 20
     TitleLabel.TextColor3 = Colors.TextWhite
     TitleLabel.BorderSizePixel = 0
     
-    -- Enable Dragging on Title area
-    ApplyDragging(TitleLabel, MainFrame)
-    ApplyDragging(MainInner, MainFrame) -- Allow dragging on background too
+    ApplyDragging(MainInner, MainFrame)
     
-    -- Tab Container Frame
-    local TabContainer = Instance.new("Frame")
+    -- Tab Container (SCROLLING FRAME NOW)
+    local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
     TabContainer.Parent = MainInner
     TabContainer.Size = UDim2.new(1, -20, 0, 30)
     TabContainer.Position = UDim2.new(0, 10, 0, 45)
     TabContainer.BackgroundTransparency = 1
     TabContainer.BorderSizePixel = 0
+    TabContainer.ScrollBarThickness = 0 -- Hidden Scrollbar
+    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.X -- Auto Scroll Width
     
     local TabLayout = Instance.new("UIListLayout")
     TabLayout.Parent = TabContainer
@@ -269,7 +275,7 @@ function BrMods:Window(options)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.BorderSizePixel = 0
     
-    -- Close Button (Outer Frame)
+    -- Close Button Area (Bottom)
     local CloseBorder = Instance.new("Frame")
     CloseBorder.Name = "CloseBorder"
     CloseBorder.Parent = MainInner
@@ -283,7 +289,6 @@ function BrMods:Window(options)
     CloseBorderCorner.CornerRadius = UDim.new(0, 8)
     CloseBorderCorner.Parent = CloseBorder
     
-    -- Close Button (Inner Frame)
     local CloseInner = Instance.new("Frame")
     CloseInner.Name = "CloseInner"
     CloseInner.Parent = CloseBorder
@@ -297,7 +302,6 @@ function BrMods:Window(options)
     CloseInnerCorner.CornerRadius = UDim.new(0, 8)
     CloseInnerCorner.Parent = CloseInner
     
-    -- Close Text Button
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "CloseButton"
     CloseBtn.Parent = CloseInner
@@ -313,30 +317,19 @@ function BrMods:Window(options)
         ScreenGui:Destroy()
     end)
     
-    -- Hover Effect for Close Button
-    CloseBtn.MouseEnter:Connect(function()
-        RunTween(CloseInner, 0.2, { BackgroundColor3 = Colors.Cyan })
-        RunTween(CloseBtn, 0.2, { TextColor3 = Colors.Black })
-    end)
-    
-    CloseBtn.MouseLeave:Connect(function()
-        RunTween(CloseInner, 0.2, { BackgroundColor3 = Colors.Black })
-        RunTween(CloseBtn, 0.2, { TextColor3 = Colors.TextWhite })
-    end)
-    
-    -- // TAB CREATION LOGIC //
+    -- // TAB CREATION //
     function self:Tab(name)
         local tabObject = { Name = name }
         
-        -- Tab Button Instance
+        -- Tab Button (Fixed Smaller Size for Scrolling)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Name = name .. "_TabButton"
         TabBtn.Parent = TabContainer
-        TabBtn.Size = UDim2.new(0.5, -3, 1, 0)
+        TabBtn.Size = UDim2.new(0, 75, 1, 0) -- Fixed width 75px
         TabBtn.BackgroundTransparency = 1
         TabBtn.Text = name
         TabBtn.Font = Enum.Font.GothamBold
-        TabBtn.TextSize = 14
+        TabBtn.TextSize = 12
         TabBtn.TextColor3 = Colors.TextGrey
         TabBtn.BorderSizePixel = 0
         
@@ -347,9 +340,9 @@ function BrMods:Window(options)
         ActiveLine.BackgroundColor3 = Colors.Cyan
         ActiveLine.BorderSizePixel = 0
         ActiveLine.Position = UDim2.new(0, 0, 1, -2)
-        ActiveLine.Size = UDim2.new(0, 0, 0, 2) -- Start with 0 width (Hidden)
+        ActiveLine.Size = UDim2.new(0, 0, 0, 2)
         
-        -- Page Scrolling Frame
+        -- Page Frame
         local PageScroll = Instance.new("ScrollingFrame")
         PageScroll.Name = name .. "_Page"
         PageScroll.Parent = PagesContainer
@@ -364,41 +357,34 @@ function BrMods:Window(options)
         local PageLayout = Instance.new("UIListLayout")
         PageLayout.Parent = PageScroll
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        PageLayout.Padding = UDim.new(0, 5)
+        PageLayout.Padding = UDim.new(0, 6)
         
-        -- Auto Canvas Size Logic
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             PageScroll.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 10)
         end)
         
-        tabObject.Button = TabBtn
-        tabObject.Page = PageScroll
+        tabObject.ButtonInstance = TabBtn
+        tabObject.PageFrame = PageScroll
         
-        -- Tab Click Event
+        -- Tab Switching
         TabBtn.MouseButton1Click:Connect(function()
-            -- Reset styling for all tabs
             for _, existingTab in pairs(self.Tabs) do
-                RunTween(existingTab.Button, 0.2, { TextColor3 = Colors.TextGrey })
-                
-                local line = existingTab.Button:FindFirstChild("ActiveLine")
+                RunTween(existingTab.ButtonInstance, 0.2, { TextColor3 = Colors.TextGrey })
+                local line = existingTab.ButtonInstance:FindFirstChild("ActiveLine")
                 if line then
                     RunTween(line, 0.2, { Size = UDim2.new(0, 0, 0, 2) })
                 end
-                
-                existingTab.Page.Visible = false
+                existingTab.PageFrame.Visible = false
             end
             
-            -- Set active styling for this tab
             RunTween(TabBtn, 0.2, { TextColor3 = Colors.Cyan })
             RunTween(ActiveLine, 0.2, { Size = UDim2.new(1, 0, 0, 2) })
-            
             PageScroll.Visible = true
             self.SelectedTab = name
         end)
         
         table.insert(self.Tabs, tabObject)
         
-        -- Automatically select the first tab
         if #self.Tabs == 1 then
             RunTween(TabBtn, 0.2, { TextColor3 = Colors.Cyan })
             RunTween(ActiveLine, 0.2, { Size = UDim2.new(1, 0, 0, 2) })
@@ -406,23 +392,23 @@ function BrMods:Window(options)
             self.SelectedTab = name
         end
         
-        -- // ELEMENT: SECTION (GRADIENT LABEL) //
+        -- // GRADIENT LABEL //
         function tabObject:Section(text)
             local SectionContainer = Instance.new("Frame")
             SectionContainer.Name = "Section_" .. text
             SectionContainer.Parent = PageScroll
-            SectionContainer.Size = UDim2.new(1, 0, 0, 22)
+            SectionContainer.Size = UDim2.new(1, 0, 0, 24)
             SectionContainer.BackgroundColor3 = Color3.new(1, 1, 1)
             SectionContainer.BorderSizePixel = 0
             
             local SectionCorner = Instance.new("UICorner")
-            SectionCorner.CornerRadius = UDim.new(0, 5)
+            SectionCorner.CornerRadius = UDim.new(0, 6)
             SectionCorner.Parent = SectionContainer
             
             local SectionGradient = Instance.new("UIGradient")
             SectionGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Colors.Cyan),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 56, 53))
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 40))
             })
             SectionGradient.Parent = SectionContainer
             
@@ -438,61 +424,60 @@ function BrMods:Window(options)
             SectionLabel.BorderSizePixel = 0
         end
         
-        -- // ELEMENT: TOGGLE (BR MODS STYLE) //
+        -- // TOGGLE (BR MODS STYLE: OUTER BORDER COLOR CHANGE) //
         function tabObject:Toggle(config)
             local title = config.Title or "Toggle"
             local defaultState = config.Default or false
             local callback = config.Callback or function() end
             
             local currentState = SavedSettings[title]
-            if currentState == nil then
-                currentState = defaultState
-            end
+            if currentState == nil then currentState = defaultState end
             
-            -- Outer Border Frame
+            -- Outer Frame (The Border that changes color)
             local ToggleBorder = Instance.new("Frame")
-            ToggleBorder.Name = "ToggleBorder_" .. title
+            ToggleBorder.Name = "Toggle_" .. title
             ToggleBorder.Parent = PageScroll
-            ToggleBorder.Size = UDim2.new(1, 0, 0, 35)
-            ToggleBorder.BackgroundColor3 = currentState and Colors.Cyan or Colors.Dark
+            ToggleBorder.Size = UDim2.new(1, 0, 0, 36)
+            ToggleBorder.BackgroundColor3 = currentState and Colors.Cyan or Colors.BorderGrey -- This is the Cyan Border
             ToggleBorder.BorderSizePixel = 0
             
             local BorderCorner = Instance.new("UICorner")
-            BorderCorner.CornerRadius = UDim.new(0, 10)
+            BorderCorner.CornerRadius = UDim.new(0, 8)
             BorderCorner.Parent = ToggleBorder
             
-            -- Inner Background Frame
+            -- Inner Frame (The Background)
             local ToggleInner = Instance.new("Frame")
             ToggleInner.Name = "Inner"
             ToggleInner.Parent = ToggleBorder
-            ToggleInner.Size = UDim2.new(1, -2, 1, -2)
+            ToggleInner.Size = UDim2.new(1, -2, 1, -2) -- Show 1px border
             ToggleInner.Position = UDim2.new(0.5, 0, 0.5, 0)
             ToggleInner.AnchorPoint = Vector2.new(0.5, 0.5)
-            ToggleInner.BackgroundColor3 = currentState and Colors.Cyan or Colors.Dark
+            ToggleInner.BackgroundColor3 = Colors.Dark -- Always Dark for contrast
             ToggleInner.BorderSizePixel = 0
             
             local InnerCorner = Instance.new("UICorner")
-            InnerCorner.CornerRadius = UDim.new(0, 10)
+            InnerCorner.CornerRadius = UDim.new(0, 8)
             InnerCorner.Parent = ToggleInner
             
-            -- Interaction Button
+            -- Button Logic
             local ToggleBtn = Instance.new("TextButton")
             ToggleBtn.Name = "Button"
             ToggleBtn.Parent = ToggleInner
             ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
             ToggleBtn.BackgroundTransparency = 1
             ToggleBtn.Text = title
-            ToggleBtn.TextColor3 = currentState and Colors.Black or Colors.TextWhite
+            ToggleBtn.TextColor3 = currentState and Colors.Cyan or Colors.TextWhite
             ToggleBtn.Font = Enum.Font.GothamSemibold
-            ToggleBtn.TextSize = 13
-            ToggleBtn.BorderSizePixel = 0
+            ToggleBtn.TextSize = 12
             
             local function UpdateVisuals()
                 if currentState then
-                    RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Cyan })
-                    RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.Black })
+                    -- Active: Border becomes Cyan, Text becomes Cyan
+                    RunTween(ToggleBorder, 0.2, { BackgroundColor3 = Colors.Cyan })
+                    RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.Cyan })
                 else
-                    RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Dark })
+                    -- Inactive: Border becomes Grey, Text becomes White
+                    RunTween(ToggleBorder, 0.2, { BackgroundColor3 = Colors.BorderGrey })
                     RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.TextWhite })
                 end
                 
@@ -500,8 +485,8 @@ function BrMods:Window(options)
                 SaveCurrentConfig()
                 
                 task.spawn(function()
-                    local success, err = pcall(callback, currentState)
-                    if not success then warn("Toggle Callback Error: " .. tostring(err)) end
+                    local s, e = pcall(callback, currentState)
+                    if not s then warn("Callback Error: " .. tostring(e)) end
                 end)
             end
             
@@ -510,32 +495,27 @@ function BrMods:Window(options)
                 UpdateVisuals()
             end)
             
-            if currentState then
-                task.spawn(function() pcall(callback, true) end)
-            end
+            if currentState then task.spawn(function() pcall(callback, true) end) end
             
             return {
-                Set = function(_, value)
-                    currentState = value
-                    UpdateVisuals()
-                end
+                Set = function(_, v) currentState = v UpdateVisuals() end
             }
         end
         
-        -- // ELEMENT: BUTTON (STATELESS) //
+        -- // BUTTON //
         function tabObject:Button(config)
             local title = config.Title or "Button"
             local callback = config.Callback or function() end
             
             local BtnBorder = Instance.new("Frame")
-            BtnBorder.Name = "BtnBorder_" .. title
+            BtnBorder.Name = "Btn_" .. title
             BtnBorder.Parent = PageScroll
-            BtnBorder.Size = UDim2.new(1, 0, 0, 35)
+            BtnBorder.Size = UDim2.new(1, 0, 0, 36)
             BtnBorder.BackgroundColor3 = Colors.Cyan
             BtnBorder.BorderSizePixel = 0
             
             local BorderCorner = Instance.new("UICorner")
-            BorderCorner.CornerRadius = UDim.new(0, 10)
+            BorderCorner.CornerRadius = UDim.new(0, 8)
             BorderCorner.Parent = BtnBorder
             
             local BtnInner = Instance.new("Frame")
@@ -548,30 +528,24 @@ function BrMods:Window(options)
             BtnInner.BorderSizePixel = 0
             
             local InnerCorner = Instance.new("UICorner")
-            InnerCorner.CornerRadius = UDim.new(0, 10)
+            InnerCorner.CornerRadius = UDim.new(0, 8)
             InnerCorner.Parent = BtnInner
             
             local ActionBtn = Instance.new("TextButton")
-            ActionBtn.Name = "ActionBtn"
+            ActionBtn.Name = "Button"
             ActionBtn.Parent = BtnInner
             ActionBtn.Size = UDim2.new(1, 0, 1, 0)
             ActionBtn.BackgroundTransparency = 1
             ActionBtn.Text = title
             ActionBtn.TextColor3 = Colors.TextWhite
             ActionBtn.Font = Enum.Font.GothamSemibold
-            ActionBtn.TextSize = 13
-            ActionBtn.BorderSizePixel = 0
+            ActionBtn.TextSize = 12
             
             ActionBtn.MouseButton1Click:Connect(function()
-                task.spawn(function()
-                    local success, err = pcall(callback)
-                    if not success then warn("Button Callback Error: " .. tostring(err)) end
-                end)
-                
-                -- Click Animation
+                task.spawn(callback)
+                -- Click Effect
                 RunTween(BtnInner, 0.1, { BackgroundColor3 = Colors.Cyan })
                 RunTween(ActionBtn, 0.1, { TextColor3 = Colors.Black })
-                
                 task.delay(0.1, function()
                     RunTween(BtnInner, 0.2, { BackgroundColor3 = Colors.Dark })
                     RunTween(ActionBtn, 0.2, { TextColor3 = Colors.TextWhite })
@@ -579,22 +553,20 @@ function BrMods:Window(options)
             end)
         end
         
-        -- // ELEMENT: SLIDER //
+        -- // SLIDER //
         function tabObject:Slider(config)
             local title = config.Title or "Slider"
             local minVal = config.Min or 0
             local maxVal = config.Max or 100
             local defaultVal = config.Default or minVal
             local callback = config.Callback or function() end
-            
             local currentVal = SavedSettings[title] or defaultVal
             
             local SliderContainer = Instance.new("Frame")
             SliderContainer.Name = "Slider_" .. title
             SliderContainer.Parent = PageScroll
-            SliderContainer.Size = UDim2.new(1, 0, 0, 40)
+            SliderContainer.Size = UDim2.new(1, 0, 0, 42)
             SliderContainer.BackgroundTransparency = 1
-            SliderContainer.BorderSizePixel = 0
             
             local SliderLabel = Instance.new("TextLabel")
             SliderLabel.Name = "Label"
@@ -607,91 +579,71 @@ function BrMods:Window(options)
             SliderLabel.TextSize = 12
             SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
             SliderLabel.Position = UDim2.new(0, 5, 0, 0)
-            SliderLabel.BorderSizePixel = 0
             
-            local SliderTrackOuter = Instance.new("Frame")
-            SliderTrackOuter.Name = "TrackOuter"
-            SliderTrackOuter.Parent = SliderContainer
-            SliderTrackOuter.Size = UDim2.new(0.9, 0, 0, 8)
-            SliderTrackOuter.Position = UDim2.new(0.5, 0, 0.7, 0)
-            SliderTrackOuter.AnchorPoint = Vector2.new(0.5, 0.5)
-            SliderTrackOuter.BackgroundColor3 = Colors.BorderGrey
-            SliderTrackOuter.BorderSizePixel = 0
+            local TrackBorder = Instance.new("Frame")
+            TrackBorder.Name = "TrackBorder"
+            TrackBorder.Parent = SliderContainer
+            TrackBorder.Size = UDim2.new(0.9, 0, 0, 8)
+            TrackBorder.Position = UDim2.new(0.5, 0, 0.7, 0)
+            TrackBorder.AnchorPoint = Vector2.new(0.5, 0.5)
+            TrackBorder.BackgroundColor3 = Colors.BorderGrey
             
-            local OuterCorner = Instance.new("UICorner")
-            OuterCorner.CornerRadius = UDim.new(1, 0)
-            OuterCorner.Parent = SliderTrackOuter
+            local TrackCorner = Instance.new("UICorner")
+            TrackCorner.CornerRadius = UDim.new(1, 0)
+            TrackCorner.Parent = TrackBorder
             
-            local SliderTrackInner = Instance.new("Frame")
-            SliderTrackInner.Name = "TrackInner"
-            SliderTrackInner.Parent = SliderTrackOuter
-            SliderTrackInner.Size = UDim2.new(1, -4, 1, -4)
-            SliderTrackInner.Position = UDim2.new(0.5, 0, 0.5, 0)
-            SliderTrackInner.AnchorPoint = Vector2.new(0.5, 0.5)
-            SliderTrackInner.BackgroundColor3 = Colors.Grey
-            SliderTrackInner.BorderSizePixel = 0
+            local TrackInner = Instance.new("Frame")
+            TrackInner.Name = "TrackInner"
+            TrackInner.Parent = TrackBorder
+            TrackInner.Size = UDim2.new(1, -2, 1, -2)
+            TrackInner.Position = UDim2.new(0.5, 0, 0.5, 0)
+            TrackInner.AnchorPoint = Vector2.new(0.5, 0.5)
+            TrackInner.BackgroundColor3 = Colors.Grey
             
             local InnerCorner = Instance.new("UICorner")
             InnerCorner.CornerRadius = UDim.new(1, 0)
-            InnerCorner.Parent = SliderTrackInner
+            InnerCorner.Parent = TrackInner
             
-            local SliderFill = Instance.new("Frame")
-            SliderFill.Name = "Fill"
-            SliderFill.Parent = SliderTrackInner
-            SliderFill.Size = UDim2.new((currentVal - minVal) / (maxVal - minVal), 0, 1, 0)
-            SliderFill.BackgroundColor3 = Colors.SliderFill
-            SliderFill.BorderSizePixel = 0
+            local Fill = Instance.new("Frame")
+            Fill.Name = "Fill"
+            Fill.Parent = TrackInner
+            Fill.Size = UDim2.new((currentVal - minVal) / (maxVal - minVal), 0, 1, 0)
+            Fill.BackgroundColor3 = Colors.SliderFill
+            Fill.BorderSizePixel = 0
             
             local FillCorner = Instance.new("UICorner")
             FillCorner.CornerRadius = UDim.new(1, 0)
-            FillCorner.Parent = SliderFill
+            FillCorner.Parent = Fill
             
-            local SliderKnob = Instance.new("Frame")
-            SliderKnob.Name = "Knob"
-            SliderKnob.Parent = SliderTrackInner
-            SliderKnob.Size = UDim2.new(0, 18, 0, 18)
-            SliderKnob.AnchorPoint = Vector2.new(0.5, 0.5)
-            SliderKnob.Position = UDim2.new((currentVal - minVal) / (maxVal - minVal), 0, 0.5, 0)
-            SliderKnob.BackgroundColor3 = Colors.TextWhite
-            SliderKnob.BorderSizePixel = 0
+            local Knob = Instance.new("Frame")
+            Knob.Name = "Knob"
+            Knob.Parent = TrackInner
+            Knob.Size = UDim2.new(0, 16, 0, 16)
+            Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+            Knob.Position = UDim2.new((currentVal - minVal) / (maxVal - minVal), 0, 0.5, 0)
+            Knob.BackgroundColor3 = Colors.TextWhite
             
             local KnobCorner = Instance.new("UICorner")
             KnobCorner.CornerRadius = UDim.new(1, 0)
-            KnobCorner.Parent = SliderKnob
-            
-            local KnobDot = Instance.new("Frame")
-            KnobDot.Name = "Dot"
-            KnobDot.Parent = SliderKnob
-            KnobDot.Size = UDim2.new(1, -4, 1, -4)
-            KnobDot.Position = UDim2.new(0.5, 0, 0.5, 0)
-            KnobDot.AnchorPoint = Vector2.new(0.5, 0.5)
-            KnobDot.BackgroundColor3 = Colors.Cyan
-            KnobDot.BorderSizePixel = 0
-            
-            local DotCorner = Instance.new("UICorner")
-            DotCorner.CornerRadius = UDim.new(1, 0)
-            DotCorner.Parent = KnobDot
+            KnobCorner.Parent = Knob
             
             local isDragging = false
             
-            local function UpdateSliderLogic(input)
-                local pos = math.clamp((input.Position.X - SliderTrackInner.AbsolutePosition.X) / SliderTrackInner.AbsoluteSize.X, 0, 1)
-                local newValue = math.floor(minVal + (maxVal - minVal) * pos)
+            local function UpdateSlider(input)
+                local pos = math.clamp((input.Position.X - TrackInner.AbsolutePosition.X) / TrackInner.AbsoluteSize.X, 0, 1)
+                local newVal = math.floor(minVal + (maxVal - minVal) * pos)
+                currentVal = newVal
                 
-                currentVal = newValue
                 SliderLabel.Text = title .. ": " .. currentVal
-                SliderFill.Size = UDim2.new(pos, 0, 1, 0)
-                SliderKnob.Position = UDim2.new(pos, 0, 0.5, 0)
+                Fill.Size = UDim2.new(pos, 0, 1, 0)
+                Knob.Position = UDim2.new(pos, 0, 0.5, 0)
                 
                 SavedSettings[title] = currentVal
                 SaveCurrentConfig()
-                
-                task.spawn(function()
-                    pcall(callback, currentVal)
-                end)
+                task.spawn(function() pcall(callback, currentVal) end)
             end
             
-            SliderKnob.InputBegan:Connect(function(input)
+            Knob.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     isDragging = true
                 end
@@ -705,56 +657,49 @@ function BrMods:Window(options)
             
             UserInputService.InputChanged:Connect(function(input)
                 if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    UpdateSliderLogic(input)
+                    UpdateSlider(input)
                 end
             end)
             
-            -- Initial Callback
-            if currentVal ~= defaultVal then
-                task.spawn(function() pcall(callback, currentVal) end)
-            end
+            if currentVal ~= defaultVal then task.spawn(callback, currentVal) end
         end
         
-        -- // ELEMENT: DROPDOWN (EXPANDING / IN-LAYOUT) //
+        -- // DROPDOWN (EXPANDING) //
         function tabObject:Dropdown(config)
             local title = config.Title or "Dropdown"
             local options = config.Options or {}
-            local defaultVal = config.Default or options[1] or "Select"
+            local default = config.Default or options[1] or "..."
             local callback = config.Callback or function() end
+            local currentVal = SavedSettings[title] or default
             
-            local currentVal = SavedSettings[title] or defaultVal
+            local DropContainer = Instance.new("Frame")
+            DropContainer.Name = "Dropdown_" .. title
+            DropContainer.Parent = PageScroll
+            DropContainer.Size = UDim2.new(1, 0, 0, 50)
+            DropContainer.BackgroundTransparency = 1
+            DropContainer.ClipsDescendants = true
             
-            local DropdownContainer = Instance.new("Frame")
-            DropdownContainer.Name = "Dropdown_" .. title
-            DropdownContainer.Parent = PageScroll
-            DropdownContainer.Size = UDim2.new(1, 0, 0, 50) -- Default height
-            DropdownContainer.BackgroundTransparency = 1
-            DropdownContainer.ClipsDescendants = true
-            DropdownContainer.BorderSizePixel = 0
-            
-            local DropLabel = Instance.new("TextLabel")
-            DropLabel.Name = "Label"
-            DropLabel.Parent = DropdownContainer
-            DropLabel.Text = title
-            DropLabel.Size = UDim2.new(1, 0, 0, 15)
-            DropLabel.BackgroundTransparency = 1
-            DropLabel.TextColor3 = Colors.TextWhite
-            DropLabel.Font = Enum.Font.GothamMedium
-            DropLabel.TextSize = 12
-            DropLabel.TextXAlignment = Enum.TextXAlignment.Left
-            DropLabel.Position = UDim2.new(0, 5, 0, 0)
-            DropLabel.BorderSizePixel = 0
+            local Label = Instance.new("TextLabel")
+            Label.Name = "Label"
+            Label.Parent = DropContainer
+            Label.Text = title
+            Label.Size = UDim2.new(1, 0, 0, 15)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Colors.TextWhite
+            Label.Font = Enum.Font.GothamMedium
+            Label.TextSize = 12
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Position = UDim2.new(0, 5, 0, 0)
             
             local DropBorder = Instance.new("Frame")
             DropBorder.Name = "Border"
-            DropBorder.Parent = DropdownContainer
+            DropBorder.Parent = DropContainer
             DropBorder.Size = UDim2.new(1, 0, 0, 30)
             DropBorder.Position = UDim2.new(0, 0, 0, 18)
             DropBorder.BackgroundColor3 = Colors.Cyan
-            DropBorder.BorderSizePixel = 0
             
             local BorderCorner = Instance.new("UICorner")
-            BorderCorner.CornerRadius = UDim.new(0, 10)
+            BorderCorner.CornerRadius = UDim.new(0, 8)
             BorderCorner.Parent = DropBorder
             
             local DropInner = Instance.new("Frame")
@@ -764,103 +709,79 @@ function BrMods:Window(options)
             DropInner.Position = UDim2.new(0.5, 0, 0.5, 0)
             DropInner.AnchorPoint = Vector2.new(0.5, 0.5)
             DropInner.BackgroundColor3 = Colors.Dark
-            DropInner.BorderSizePixel = 0
             
             local InnerCorner = Instance.new("UICorner")
-            InnerCorner.CornerRadius = UDim.new(0, 10)
+            InnerCorner.CornerRadius = UDim.new(0, 8)
             InnerCorner.Parent = DropInner
             
-            local MainButton = Instance.new("TextButton")
-            MainButton.Name = "MainButton"
-            MainButton.Parent = DropInner
-            MainButton.Size = UDim2.new(1, 0, 1, 0)
-            MainButton.BackgroundTransparency = 1
-            MainButton.Text = currentVal
-            MainButton.TextColor3 = Colors.TextWhite
-            MainButton.Font = Enum.Font.GothamBold
-            MainButton.TextSize = 12
-            MainButton.BorderSizePixel = 0
+            local MainBtn = Instance.new("TextButton")
+            MainBtn.Name = "Main"
+            MainBtn.Parent = DropInner
+            MainBtn.Size = UDim2.new(1, 0, 1, 0)
+            MainBtn.BackgroundTransparency = 1
+            MainBtn.Text = currentVal
+            MainBtn.TextColor3 = Colors.TextWhite
+            MainBtn.Font = Enum.Font.GothamBold
+            MainBtn.TextSize = 12
             
-            -- List Container (Inside the main container)
             local ListFrame = Instance.new("Frame")
-            ListFrame.Name = "ListFrame"
-            ListFrame.Parent = DropdownContainer
+            ListFrame.Name = "List"
+            ListFrame.Parent = DropContainer
             ListFrame.Size = UDim2.new(1, 0, 0, 0)
-            ListFrame.Position = UDim2.new(0, 0, 0, 50) -- Below the main button area
+            ListFrame.Position = UDim2.new(0, 0, 0, 50)
             ListFrame.BackgroundTransparency = 1
-            ListFrame.ClipsDescendants = true
-            ListFrame.BorderSizePixel = 0
             
             local ListLayout = Instance.new("UIListLayout")
             ListLayout.Parent = ListFrame
-            ListLayout.Padding = UDim.new(0, 2)
             ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            ListLayout.Padding = UDim.new(0, 2)
             
             local isOpen = false
             local itemHeight = 27
             local totalHeight = #options * itemHeight
             
-            for _, optionName in ipairs(options) do
-                local OptionBtn = Instance.new("TextButton")
-                OptionBtn.Name = "Option_" .. optionName
-                OptionBtn.Parent = ListFrame
-                OptionBtn.Text = optionName
-                OptionBtn.Size = UDim2.new(1, 0, 0, 25)
-                OptionBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-                OptionBtn.BackgroundTransparency = 0.2
-                OptionBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-                OptionBtn.Font = Enum.Font.Gotham
-                OptionBtn.TextSize = 12
-                OptionBtn.BorderSizePixel = 0
+            for _, opt in ipairs(options) do
+                local OptBtn = Instance.new("TextButton")
+                OptBtn.Name = "Option_" .. opt
+                OptBtn.Parent = ListFrame
+                OptBtn.Size = UDim2.new(1, 0, 0, 25)
+                OptBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                OptBtn.BackgroundTransparency = 0.5
+                OptBtn.Text = opt
+                OptBtn.TextColor3 = Colors.TextGrey
+                OptBtn.Font = Enum.Font.Gotham
+                OptBtn.TextSize = 11
                 
-                local OptionCorner = Instance.new("UICorner")
-                OptionCorner.CornerRadius = UDim.new(0, 6)
-                OptionCorner.Parent = OptionBtn
+                local OptCorner = Instance.new("UICorner")
+                OptCorner.CornerRadius = UDim.new(0, 6)
+                OptCorner.Parent = OptBtn
                 
-                OptionBtn.MouseButton1Click:Connect(function()
-                    currentVal = optionName
-                    MainButton.Text = optionName
+                OptBtn.MouseButton1Click:Connect(function()
+                    currentVal = opt
+                    MainBtn.Text = opt
                     
-                    -- Close Logic
                     isOpen = false
-                    if Container then -- Check existence
-                        DropdownContainer:TweenSize(UDim2.new(1, 0, 0, 50), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-                        ListFrame:TweenSize(UDim2.new(1, 0, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-                    end
+                    RunTween(DropContainer, 0.2, { Size = UDim2.new(1, 0, 0, 50) })
+                    RunTween(ListFrame, 0.2, { Size = UDim2.new(1, 0, 0, 0) })
                     
                     SavedSettings[title] = currentVal
                     SaveCurrentConfig()
-                    
-                    task.spawn(function()
-                        pcall(callback, currentVal)
-                    end)
+                    task.spawn(function() pcall(callback, currentVal) end)
                 end)
             end
             
-            MainButton.MouseButton1Click:Connect(function()
+            MainBtn.MouseButton1Click:Connect(function()
                 isOpen = not isOpen
-                
                 if isOpen then
-                    -- Expand
-                    ListFrame:TweenSize(UDim2.new(1, 0, 0, totalHeight), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-                    DropdownContainer:TweenSize(UDim2.new(1, 0, 0, 50 + totalHeight), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+                    RunTween(ListFrame, 0.2, { Size = UDim2.new(1, 0, 0, totalHeight) })
+                    RunTween(DropContainer, 0.2, { Size = UDim2.new(1, 0, 0, 50 + totalHeight) })
                 else
-                    -- Collapse
-                    ListFrame:TweenSize(UDim2.new(1, 0, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-                    DropdownContainer:TweenSize(UDim2.new(1, 0, 0, 50), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+                    RunTween(ListFrame, 0.2, { Size = UDim2.new(1, 0, 0, 0) })
+                    RunTween(DropContainer, 0.2, { Size = UDim2.new(1, 0, 0, 50) })
                 end
             end)
             
-            if currentVal ~= defaultVal then
-                task.spawn(function() pcall(callback, currentVal) end)
-            end
-            
-            return {
-                Set = function(_, val)
-                    currentVal = val
-                    MainButton.Text = val
-                end
-            }
+            if currentVal ~= default then task.spawn(callback, currentVal) end
         end
         
         return tabObject
