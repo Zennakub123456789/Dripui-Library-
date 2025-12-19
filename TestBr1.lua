@@ -1,8 +1,7 @@
--- [[ BR MODS UI LIBRARY - VERSION 3.0 FINAL FIX ]]
--- STYLE: BR MODS ORIGINAL (Cyan Border Toggles, Double Frame)
--- TAB SYSTEM: Scrolling Tabs (For many tabs support)
--- DROPDOWN: Expanding (In-Layout)
--- FIXED: 'Unable to cast value' Error & Visual Bugs
+-- [[ BR MODS UI LIBRARY - VERSION 3.1 FINAL STYLE ]]
+-- STYLE FIX: Toggle (Cyan Border Always -> Cyan Fill on Active)
+-- FEATURE: Functional Section (Gradient Header)
+-- TAB SYSTEM: Scrolling Tabs
 -- CODE STYLE: Ultra Verbose (No shortcuts)
 
 local BrMods = {}
@@ -95,7 +94,6 @@ local function ProtectInstance(instance)
 end
 
 local function RunTween(instance, duration, properties)
-    -- FIXED: Strict check to prevent "Unable to cast value to Object" error
     if typeof(instance) ~= "Instance" then
         return nil
     end
@@ -123,7 +121,7 @@ end
 -- // THEME COLORS //
 local Colors = {
     Cyan = Color3.fromRGB(0, 219, 197),
-    Dark = Color3.fromRGB(20, 20, 20), -- Lighter dark for contrast
+    Dark = Color3.fromRGB(20, 20, 20),
     Background = Color3.fromRGB(15, 15, 15),
     Black = Color3.fromRGB(0, 0, 0),
     Grey = Color3.fromRGB(56, 56, 72),
@@ -210,7 +208,7 @@ function BrMods:Window(options)
     MainFrame.Parent = ScreenGui
     MainFrame.Size = UDim2.new(0, 250, 0, 325)
     MainFrame.Position = UDim2.new(0.5, -125, 0.5, -162)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Outer Border Color
+    MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
     
@@ -222,7 +220,7 @@ function BrMods:Window(options)
     local MainInner = Instance.new("Frame")
     MainInner.Name = "Inner"
     MainInner.Parent = MainFrame
-    MainInner.Size = UDim2.new(1, -2, 1, -2) -- Create 1px Border Effect
+    MainInner.Size = UDim2.new(1, -2, 1, -2)
     MainInner.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainInner.AnchorPoint = Vector2.new(0.5, 0.5)
     MainInner.BackgroundColor3 = Colors.Background
@@ -248,7 +246,7 @@ function BrMods:Window(options)
     
     ApplyDragging(MainInner, MainFrame)
     
-    -- Tab Container (SCROLLING FRAME NOW)
+    -- Tab Container (Scrolling)
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
     TabContainer.Parent = MainInner
@@ -256,9 +254,9 @@ function BrMods:Window(options)
     TabContainer.Position = UDim2.new(0, 10, 0, 45)
     TabContainer.BackgroundTransparency = 1
     TabContainer.BorderSizePixel = 0
-    TabContainer.ScrollBarThickness = 0 -- Hidden Scrollbar
+    TabContainer.ScrollBarThickness = 0
     TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-    TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.X -- Auto Scroll Width
+    TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.X
     
     local TabLayout = Instance.new("UIListLayout")
     TabLayout.Parent = TabContainer
@@ -275,7 +273,7 @@ function BrMods:Window(options)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.BorderSizePixel = 0
     
-    -- Close Button Area (Bottom)
+    -- Close Button Area
     local CloseBorder = Instance.new("Frame")
     CloseBorder.Name = "CloseBorder"
     CloseBorder.Parent = MainInner
@@ -321,11 +319,10 @@ function BrMods:Window(options)
     function self:Tab(name)
         local tabObject = { Name = name }
         
-        -- Tab Button (Fixed Smaller Size for Scrolling)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Name = name .. "_TabButton"
         TabBtn.Parent = TabContainer
-        TabBtn.Size = UDim2.new(0, 75, 1, 0) -- Fixed width 75px
+        TabBtn.Size = UDim2.new(0, 75, 1, 0)
         TabBtn.BackgroundTransparency = 1
         TabBtn.Text = name
         TabBtn.Font = Enum.Font.GothamBold
@@ -333,7 +330,6 @@ function BrMods:Window(options)
         TabBtn.TextColor3 = Colors.TextGrey
         TabBtn.BorderSizePixel = 0
         
-        -- Active Indicator Line
         local ActiveLine = Instance.new("Frame")
         ActiveLine.Name = "ActiveLine"
         ActiveLine.Parent = TabBtn
@@ -342,7 +338,6 @@ function BrMods:Window(options)
         ActiveLine.Position = UDim2.new(0, 0, 1, -2)
         ActiveLine.Size = UDim2.new(0, 0, 0, 2)
         
-        -- Page Frame
         local PageScroll = Instance.new("ScrollingFrame")
         PageScroll.Name = name .. "_Page"
         PageScroll.Parent = PagesContainer
@@ -366,7 +361,6 @@ function BrMods:Window(options)
         tabObject.ButtonInstance = TabBtn
         tabObject.PageFrame = PageScroll
         
-        -- Tab Switching
         TabBtn.MouseButton1Click:Connect(function()
             for _, existingTab in pairs(self.Tabs) do
                 RunTween(existingTab.ButtonInstance, 0.2, { TextColor3 = Colors.TextGrey })
@@ -392,17 +386,25 @@ function BrMods:Window(options)
             self.SelectedTab = name
         end
         
-        -- // GRADIENT LABEL //
-        function tabObject:Section(text)
+        -- // ELEMENT: SECTION (FUNCTIONAL) //
+        function tabObject:Section(options)
+            -- Support both string and table input
+            local text = "Section"
+            if type(options) == "string" then
+                text = options
+            elseif type(options) == "table" and options.Text then
+                text = options.Text
+            end
+            
             local SectionContainer = Instance.new("Frame")
             SectionContainer.Name = "Section_" .. text
             SectionContainer.Parent = PageScroll
-            SectionContainer.Size = UDim2.new(1, 0, 0, 24)
+            SectionContainer.Size = UDim2.new(1, 0, 0, 22)
             SectionContainer.BackgroundColor3 = Color3.new(1, 1, 1)
             SectionContainer.BorderSizePixel = 0
             
             local SectionCorner = Instance.new("UICorner")
-            SectionCorner.CornerRadius = UDim.new(0, 6)
+            SectionCorner.CornerRadius = UDim.new(0, 5)
             SectionCorner.Parent = SectionContainer
             
             local SectionGradient = Instance.new("UIGradient")
@@ -422,9 +424,15 @@ function BrMods:Window(options)
             SectionLabel.Font = Enum.Font.GothamBold
             SectionLabel.TextSize = 12
             SectionLabel.BorderSizePixel = 0
+            
+            return {
+                SetText = function(_, newText)
+                    SectionLabel.Text = newText
+                end
+            }
         end
         
-        -- // TOGGLE (BR MODS STYLE: OUTER BORDER COLOR CHANGE) //
+        -- // ELEMENT: TOGGLE (FIXED STYLE - CYAN BORDER ALWAYS) //
         function tabObject:Toggle(config)
             local title = config.Title or "Toggle"
             local defaultState = config.Default or false
@@ -433,51 +441,53 @@ function BrMods:Window(options)
             local currentState = SavedSettings[title]
             if currentState == nil then currentState = defaultState end
             
-            -- Outer Frame (The Border that changes color)
+            -- Outer Border Frame (ALWAYS CYAN)
             local ToggleBorder = Instance.new("Frame")
             ToggleBorder.Name = "Toggle_" .. title
             ToggleBorder.Parent = PageScroll
             ToggleBorder.Size = UDim2.new(1, 0, 0, 36)
-            ToggleBorder.BackgroundColor3 = currentState and Colors.Cyan or Colors.BorderGrey -- This is the Cyan Border
+            ToggleBorder.BackgroundColor3 = Colors.Cyan -- Always Cyan
             ToggleBorder.BorderSizePixel = 0
             
             local BorderCorner = Instance.new("UICorner")
             BorderCorner.CornerRadius = UDim.new(0, 8)
             BorderCorner.Parent = ToggleBorder
             
-            -- Inner Frame (The Background)
+            -- Inner Frame (Background Fill)
             local ToggleInner = Instance.new("Frame")
             ToggleInner.Name = "Inner"
             ToggleInner.Parent = ToggleBorder
-            ToggleInner.Size = UDim2.new(1, -2, 1, -2) -- Show 1px border
+            ToggleInner.Size = UDim2.new(1, -2, 1, -2)
             ToggleInner.Position = UDim2.new(0.5, 0, 0.5, 0)
             ToggleInner.AnchorPoint = Vector2.new(0.5, 0.5)
-            ToggleInner.BackgroundColor3 = Colors.Dark -- Always Dark for contrast
+            -- Init Color based on state
+            ToggleInner.BackgroundColor3 = currentState and Colors.Cyan or Colors.Dark
             ToggleInner.BorderSizePixel = 0
             
             local InnerCorner = Instance.new("UICorner")
             InnerCorner.CornerRadius = UDim.new(0, 8)
             InnerCorner.Parent = ToggleInner
             
-            -- Button Logic
+            -- Interaction Button
             local ToggleBtn = Instance.new("TextButton")
             ToggleBtn.Name = "Button"
             ToggleBtn.Parent = ToggleInner
             ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
             ToggleBtn.BackgroundTransparency = 1
             ToggleBtn.Text = title
-            ToggleBtn.TextColor3 = currentState and Colors.Cyan or Colors.TextWhite
+            -- Init Text Color based on state
+            ToggleBtn.TextColor3 = currentState and Colors.Black or Colors.TextWhite
             ToggleBtn.Font = Enum.Font.GothamSemibold
             ToggleBtn.TextSize = 12
             
             local function UpdateVisuals()
                 if currentState then
-                    -- Active: Border becomes Cyan, Text becomes Cyan
-                    RunTween(ToggleBorder, 0.2, { BackgroundColor3 = Colors.Cyan })
-                    RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.Cyan })
+                    -- Active: Inner becomes Cyan (Filled), Text becomes Black
+                    RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Cyan })
+                    RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.Black })
                 else
-                    -- Inactive: Border becomes Grey, Text becomes White
-                    RunTween(ToggleBorder, 0.2, { BackgroundColor3 = Colors.BorderGrey })
+                    -- Inactive: Inner becomes Dark (Hollow), Text becomes White
+                    RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Dark })
                     RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.TextWhite })
                 end
                 
@@ -502,7 +512,7 @@ function BrMods:Window(options)
             }
         end
         
-        -- // BUTTON //
+        -- // ELEMENT: BUTTON //
         function tabObject:Button(config)
             local title = config.Title or "Button"
             local callback = config.Callback or function() end
@@ -553,7 +563,7 @@ function BrMods:Window(options)
             end)
         end
         
-        -- // SLIDER //
+        -- // ELEMENT: SLIDER //
         function tabObject:Slider(config)
             local title = config.Title or "Slider"
             local minVal = config.Min or 0
