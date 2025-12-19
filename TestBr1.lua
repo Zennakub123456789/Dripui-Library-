@@ -1,8 +1,9 @@
--- [[ BR MODS UI LIBRARY - VERSION 3.1 FINAL STYLE ]]
--- STYLE FIX: Toggle (Cyan Border Always -> Cyan Fill on Active)
--- FEATURE: Functional Section (Gradient Header)
--- TAB SYSTEM: Scrolling Tabs
--- CODE STYLE: Ultra Verbose (No shortcuts)
+-- [[ BR MODS UI LIBRARY - VERSION 3.5 ULTIMATE ]]
+-- FEATURES:
+-- 1. Full BrMods Styling (Cyan/Dark, Double Frames)
+-- 2. Enhanced Animations (Popups, Hovers, Scales)
+-- 3. Floating Toggle Button (Draggable, Custom Image) instead of Destroy
+-- 4. Ultra Verbose Code Structure (No shortcuts)
 
 local BrMods = {}
 
@@ -93,7 +94,8 @@ local function ProtectInstance(instance)
     end)
 end
 
-local function RunTween(instance, duration, properties)
+local function RunTween(instance, duration, properties, style, direction)
+    -- STRICT CHECK: Prevent "Unable to cast value" error
     if typeof(instance) ~= "Instance" then
         return nil
     end
@@ -101,10 +103,13 @@ local function RunTween(instance, duration, properties)
         return nil
     end
     
+    local tweenStyle = style or Enum.EasingStyle.Quad
+    local tweenDir = direction or Enum.EasingDirection.Out
+    
     local tweenInfo = TweenInfo.new(
         duration, 
-        Enum.EasingStyle.Quad, 
-        Enum.EasingDirection.Out
+        tweenStyle, 
+        tweenDir
     )
     
     local success, tweenObject = pcall(function()
@@ -141,6 +146,7 @@ local function ApplyDragging(dragTarget, moveTarget)
 
     local function update(input)
         local delta = input.Position - dragStart
+        -- Use UDim2.new to ensure strict positioning
         moveTarget.Position = UDim2.new(
             startPos.X.Scale, 
             startPos.X.Offset + delta.X, 
@@ -186,7 +192,10 @@ function BrMods:Window(options)
     self.SelectedTab = nil
     
     options = options or {}
+    local windowTitle = options.Title or "B R   M O D S"
     local placeId = tostring(game.PlaceId)
+    local openIconId = options.OpenIcon or "rbxassetid://12543323067" -- Default Icon (Can be changed)
+    
     self.ConfigID = options.ConfigID or placeId
     
     local SavedSettings = LoadConfig(self.ConfigID)
@@ -202,7 +211,30 @@ function BrMods:Window(options)
     ScreenGui.ResetOnSpawn = false
     ProtectInstance(ScreenGui)
     
-    -- Main Frame (Outer Border)
+    -- // FLOATING TOGGLE BUTTON (Hidden by default) //
+    local OpenButton = Instance.new("ImageButton")
+    OpenButton.Name = "OpenButton"
+    OpenButton.Parent = ScreenGui
+    OpenButton.Size = UDim2.new(0, 50, 0, 50)
+    OpenButton.Position = UDim2.new(0, 20, 0.5, -25) -- Left Side
+    OpenButton.BackgroundColor3 = Colors.Dark
+    OpenButton.Image = openIconId
+    OpenButton.Visible = false -- Start hidden
+    OpenButton.Active = true
+    
+    local OpenBtnCorner = Instance.new("UICorner")
+    OpenBtnCorner.CornerRadius = UDim.new(1, 0) -- Circle
+    OpenBtnCorner.Parent = OpenButton
+    
+    local OpenBtnStroke = Instance.new("UIStroke")
+    OpenBtnStroke.Thickness = 2
+    OpenBtnStroke.Color = Colors.Cyan
+    OpenBtnStroke.Parent = OpenButton
+    
+    -- Allow dragging the open button
+    ApplyDragging(OpenButton, OpenButton)
+    
+    -- // MAIN FRAME //
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Parent = ScreenGui
@@ -212,11 +244,15 @@ function BrMods:Window(options)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
     
+    -- Initial Pop-up Animation Scale
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    RunTween(MainFrame, 0.5, { Size = UDim2.new(0, 250, 0, 325) }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 15)
     MainCorner.Parent = MainFrame
     
-    -- Inner Frame (Content Area)
+    -- Inner Frame
     local MainInner = Instance.new("Frame")
     MainInner.Name = "Inner"
     MainInner.Parent = MainFrame
@@ -238,7 +274,7 @@ function BrMods:Window(options)
     TitleLabel.Size = UDim2.new(1, 0, 0, 35)
     TitleLabel.Position = UDim2.new(0, 0, 0, 5)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "B R   M O D S"
+    TitleLabel.Text = windowTitle
     TitleLabel.Font = Enum.Font.GothamBlack
     TitleLabel.TextSize = 20
     TitleLabel.TextColor3 = Colors.TextWhite
@@ -246,7 +282,7 @@ function BrMods:Window(options)
     
     ApplyDragging(MainInner, MainFrame)
     
-    -- Tab Container (Scrolling)
+    -- Tab Container
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
     TabContainer.Parent = MainInner
@@ -264,7 +300,7 @@ function BrMods:Window(options)
     TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabLayout.Padding = UDim.new(0, 5)
     
-    -- Pages Container Frame
+    -- Pages Container
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Name = "PagesContainer"
     PagesContainer.Parent = MainInner
@@ -272,6 +308,35 @@ function BrMods:Window(options)
     PagesContainer.Position = UDim2.new(0, 8, 0, 80)
     PagesContainer.BackgroundTransparency = 1
     PagesContainer.BorderSizePixel = 0
+    
+    -- // VISIBILITY TOGGLE LOGIC //
+    local isWindowOpen = true
+    
+    local function ToggleWindow(state)
+        isWindowOpen = state
+        if isWindowOpen then
+            -- Show Window (Pop Up)
+            MainFrame.Visible = true
+            OpenButton.Visible = false
+            -- Reset Size for Tween
+            MainFrame.Size = UDim2.new(0, 0, 0, 0) 
+            RunTween(MainFrame, 0.4, { Size = UDim2.new(0, 250, 0, 325) }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        else
+            -- Hide Window (Scale Down)
+            RunTween(MainFrame, 0.3, { Size = UDim2.new(0, 0, 0, 0) }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+            task.delay(0.3, function()
+                MainFrame.Visible = false
+                OpenButton.Visible = true
+                -- Animate OpenButton Appearance
+                OpenButton.Size = UDim2.new(0, 0, 0, 0)
+                RunTween(OpenButton, 0.4, { Size = UDim2.new(0, 50, 0, 50) }, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
+            end)
+        end
+    end
+    
+    OpenButton.MouseButton1Click:Connect(function()
+        ToggleWindow(true)
+    end)
     
     -- Close Button Area
     local CloseBorder = Instance.new("Frame")
@@ -311,8 +376,20 @@ function BrMods:Window(options)
     CloseBtn.TextSize = 12
     CloseBtn.BorderSizePixel = 0
     
+    -- Replace Destroy with Toggle Logic
     CloseBtn.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
+        ToggleWindow(false)
+    end)
+    
+    -- Close Button Hover Effect
+    CloseBtn.MouseEnter:Connect(function()
+        RunTween(CloseInner, 0.2, { BackgroundColor3 = Colors.Cyan })
+        RunTween(CloseBtn, 0.2, { TextColor3 = Colors.Black })
+    end)
+    
+    CloseBtn.MouseLeave:Connect(function()
+        RunTween(CloseInner, 0.2, { BackgroundColor3 = Colors.Black })
+        RunTween(CloseBtn, 0.2, { TextColor3 = Colors.TextWhite })
     end)
     
     -- // TAB CREATION //
@@ -386,25 +463,21 @@ function BrMods:Window(options)
             self.SelectedTab = name
         end
         
-        -- // ELEMENT: SECTION (FUNCTIONAL) //
+        -- // SECTION //
         function tabObject:Section(options)
-            -- Support both string and table input
             local text = "Section"
-            if type(options) == "string" then
-                text = options
-            elseif type(options) == "table" and options.Text then
-                text = options.Text
-            end
+            if type(options) == "string" then text = options
+            elseif type(options) == "table" and options.Text then text = options.Text end
             
             local SectionContainer = Instance.new("Frame")
             SectionContainer.Name = "Section_" .. text
             SectionContainer.Parent = PageScroll
-            SectionContainer.Size = UDim2.new(1, 0, 0, 22)
+            SectionContainer.Size = UDim2.new(1, 0, 0, 24)
             SectionContainer.BackgroundColor3 = Color3.new(1, 1, 1)
             SectionContainer.BorderSizePixel = 0
             
             local SectionCorner = Instance.new("UICorner")
-            SectionCorner.CornerRadius = UDim.new(0, 5)
+            SectionCorner.CornerRadius = UDim.new(0, 6)
             SectionCorner.Parent = SectionContainer
             
             local SectionGradient = Instance.new("UIGradient")
@@ -426,13 +499,11 @@ function BrMods:Window(options)
             SectionLabel.BorderSizePixel = 0
             
             return {
-                SetText = function(_, newText)
-                    SectionLabel.Text = newText
-                end
+                SetText = function(_, newText) SectionLabel.Text = newText end
             }
         end
         
-        -- // ELEMENT: TOGGLE (FIXED STYLE - CYAN BORDER ALWAYS) //
+        -- // TOGGLE (FINAL FIX) //
         function tabObject:Toggle(config)
             local title = config.Title or "Toggle"
             local defaultState = config.Default or false
@@ -441,12 +512,12 @@ function BrMods:Window(options)
             local currentState = SavedSettings[title]
             if currentState == nil then currentState = defaultState end
             
-            -- Outer Border Frame (ALWAYS CYAN)
+            -- Outer Frame (Border - Always Visible)
             local ToggleBorder = Instance.new("Frame")
             ToggleBorder.Name = "Toggle_" .. title
             ToggleBorder.Parent = PageScroll
             ToggleBorder.Size = UDim2.new(1, 0, 0, 36)
-            ToggleBorder.BackgroundColor3 = Colors.Cyan -- Always Cyan
+            ToggleBorder.BackgroundColor3 = Colors.Cyan -- Border Color
             ToggleBorder.BorderSizePixel = 0
             
             local BorderCorner = Instance.new("UICorner")
@@ -460,7 +531,6 @@ function BrMods:Window(options)
             ToggleInner.Size = UDim2.new(1, -2, 1, -2)
             ToggleInner.Position = UDim2.new(0.5, 0, 0.5, 0)
             ToggleInner.AnchorPoint = Vector2.new(0.5, 0.5)
-            -- Init Color based on state
             ToggleInner.BackgroundColor3 = currentState and Colors.Cyan or Colors.Dark
             ToggleInner.BorderSizePixel = 0
             
@@ -468,25 +538,21 @@ function BrMods:Window(options)
             InnerCorner.CornerRadius = UDim.new(0, 8)
             InnerCorner.Parent = ToggleInner
             
-            -- Interaction Button
             local ToggleBtn = Instance.new("TextButton")
             ToggleBtn.Name = "Button"
             ToggleBtn.Parent = ToggleInner
             ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
             ToggleBtn.BackgroundTransparency = 1
             ToggleBtn.Text = title
-            -- Init Text Color based on state
             ToggleBtn.TextColor3 = currentState and Colors.Black or Colors.TextWhite
             ToggleBtn.Font = Enum.Font.GothamSemibold
             ToggleBtn.TextSize = 12
             
             local function UpdateVisuals()
                 if currentState then
-                    -- Active: Inner becomes Cyan (Filled), Text becomes Black
                     RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Cyan })
                     RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.Black })
                 else
-                    -- Inactive: Inner becomes Dark (Hollow), Text becomes White
                     RunTween(ToggleInner, 0.2, { BackgroundColor3 = Colors.Dark })
                     RunTween(ToggleBtn, 0.2, { TextColor3 = Colors.TextWhite })
                 end
@@ -503,16 +569,19 @@ function BrMods:Window(options)
             ToggleBtn.MouseButton1Click:Connect(function()
                 currentState = not currentState
                 UpdateVisuals()
+                -- Add click tween scale
+                RunTween(ToggleBorder, 0.1, { Size = UDim2.new(0.95, 0, 0, 34) })
+                task.delay(0.1, function()
+                    RunTween(ToggleBorder, 0.1, { Size = UDim2.new(1, 0, 0, 36) })
+                end)
             end)
             
             if currentState then task.spawn(function() pcall(callback, true) end) end
             
-            return {
-                Set = function(_, v) currentState = v UpdateVisuals() end
-            }
+            return { Set = function(_, v) currentState = v UpdateVisuals() end }
         end
         
-        -- // ELEMENT: BUTTON //
+        -- // BUTTON //
         function tabObject:Button(config)
             local title = config.Title or "Button"
             local callback = config.Callback or function() end
@@ -553,17 +622,20 @@ function BrMods:Window(options)
             
             ActionBtn.MouseButton1Click:Connect(function()
                 task.spawn(callback)
-                -- Click Effect
+                -- Hover/Active Tween
                 RunTween(BtnInner, 0.1, { BackgroundColor3 = Colors.Cyan })
                 RunTween(ActionBtn, 0.1, { TextColor3 = Colors.Black })
+                RunTween(BtnBorder, 0.1, { Size = UDim2.new(0.95, 0, 0, 34) }) -- Scale down
+                
                 task.delay(0.1, function()
                     RunTween(BtnInner, 0.2, { BackgroundColor3 = Colors.Dark })
                     RunTween(ActionBtn, 0.2, { TextColor3 = Colors.TextWhite })
+                    RunTween(BtnBorder, 0.2, { Size = UDim2.new(1, 0, 0, 36) }) -- Scale back
                 end)
             end)
         end
         
-        -- // ELEMENT: SLIDER //
+        -- // SLIDER //
         function tabObject:Slider(config)
             local title = config.Title or "Slider"
             local minVal = config.Min or 0
@@ -643,11 +715,9 @@ function BrMods:Window(options)
                 local pos = math.clamp((input.Position.X - TrackInner.AbsolutePosition.X) / TrackInner.AbsoluteSize.X, 0, 1)
                 local newVal = math.floor(minVal + (maxVal - minVal) * pos)
                 currentVal = newVal
-                
                 SliderLabel.Text = title .. ": " .. currentVal
                 Fill.Size = UDim2.new(pos, 0, 1, 0)
                 Knob.Position = UDim2.new(pos, 0, 0.5, 0)
-                
                 SavedSettings[title] = currentVal
                 SaveCurrentConfig()
                 task.spawn(function() pcall(callback, currentVal) end)
@@ -656,12 +726,16 @@ function BrMods:Window(options)
             Knob.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     isDragging = true
+                    -- Hover Effect on Knob
+                    RunTween(Knob, 0.1, { Size = UDim2.new(0, 20, 0, 20) })
                 end
             end)
             
             UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     isDragging = false
+                    -- Reset Knob Size
+                    RunTween(Knob, 0.1, { Size = UDim2.new(0, 16, 0, 16) })
                 end
             end)
             
@@ -674,7 +748,7 @@ function BrMods:Window(options)
             if currentVal ~= defaultVal then task.spawn(callback, currentVal) end
         end
         
-        -- // DROPDOWN (EXPANDING) //
+        -- // DROPDOWN //
         function tabObject:Dropdown(config)
             local title = config.Title or "Dropdown"
             local options = config.Options or {}
