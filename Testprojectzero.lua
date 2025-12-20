@@ -1,7 +1,9 @@
--- [[ PROJECT ZERO LIBRARY - GROUPBOX EDITION ]]
--- STYLE: Original Project Zero (Groupboxes with Title on Border)
--- FEATURE: Auto-Groupbox (Wraps elements in a box automatically if not specified)
--- COMPATIBILITY: Works with your existing script structure
+-- [[ PROJECT ZERO LIBRARY - VERSION 4.0 CUSTOM GROUPBOX ]]
+-- UPDATE:
+-- 1. Groupbox Title ZIndex set to 10 (Fixes border overlap)
+-- 2. Added Tab:CreateGroupbox({Name = "...", Size = UDim2...})
+-- 3. Groupbox object has :SetText() to change title dynamically
+-- 4. Auto-Groupbox still works for backward compatibility
 
 local ProjectZero = {}
 
@@ -101,7 +103,7 @@ function ProjectZero:Window(options)
         Name = "ProjectZero_" .. HttpService:GenerateGUID(false),
         Parent = GetSafeParent(),
         ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling, -- Changed to Sibling for better ZIndex control
         IgnoreGuiInset = true
     })
     Protect(ScreenGui)
@@ -183,12 +185,63 @@ function ProjectZero:Window(options)
     local TabButtons = {}
     local Pages = {}
     
+    -- // HELPER: CREATE GROUPBOX UI //
+    local function CreateGroupboxUI(parent, title, customSize)
+        -- Box Container
+        local Box = Create("Frame", {
+            Parent = parent,
+            -- Use custom size if provided, else auto width / auto height
+            Size = customSize or UDim2.new(1, 0, 0, 0), 
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundColor3 = CFG.GroupBg,
+            BorderSizePixel = 0
+        })
+        Create("UIStroke", { Parent = Box, Color = CFG.Border, Thickness = 1 })
+        Create("UICorner", { Parent = Box, CornerRadius = UDim.new(0, 4) })
+        
+        -- Title Overlap (ZIndex Fixed to 10)
+        local LabelCont = Create("Frame", {
+            Parent = Box,
+            BackgroundColor3 = CFG.BgPanel,
+            Size = UDim2.new(0, 0, 0, 14),
+            AutomaticSize = Enum.AutomaticSize.X,
+            Position = UDim2.new(0, 10, 0, -8),
+            BorderSizePixel = 0,
+            ZIndex = 10 -- FIXED: High ZIndex to sit on top of border
+        })
+        
+        local TitleLabel = Create("TextLabel", {
+            Parent = LabelCont,
+            Text = title,
+            TextColor3 = CFG.Accent,
+            Font = Enum.Font.GothamBold,
+            TextSize = 11,
+            Size = UDim2.new(0, 0, 1, 0),
+            AutomaticSize = Enum.AutomaticSize.X,
+            BackgroundTransparency = 1,
+            ZIndex = 10 -- FIXED: Ensure text is also on top
+        })
+        Create("UIPadding", { Parent = LabelCont, PaddingLeft = UDim.new(0,5), PaddingRight = UDim.new(0,5) })
+        
+        -- Inner Container for Elements
+        local Inner = Create("Frame", {
+            Parent = Box,
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1
+        })
+        Create("UIPadding", { Parent = Inner, PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) })
+        Create("UIListLayout", { Parent = Inner, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+        
+        -- Return inner container for elements AND label for renaming
+        return Inner, TitleLabel
+    end
+    
     -- // TAB SYSTEM //
     function self:Tab(name, icon)
         local Tab = {}
         icon = icon or CFG.Icons.Default
         
-        -- Auto Icon Mapping
         if name == "Aimbot" then icon = CFG.Icons.Aim
         elseif name == "Visual" or name == "Draw" or name == "Player" then icon = CFG.Icons.Visual
         elseif name == "Vehicle" or name == "Setting" then icon = CFG.Icons.Setting end
@@ -281,71 +334,39 @@ function ProjectZero:Window(options)
             TweenService:Create(TabIcon, TweenInfo.new(0.2), {ImageColor3 = CFG.Accent}):Play()
         end
         
-        -- // HELPER: CREATE GROUPBOX UI //
-        local function CreateGroupboxUI(parent, title)
-            local Box = Create("Frame", {
-                Parent = parent,
-                Size = UDim2.new(1, 0, 0, 0),
-                AutomaticSize = Enum.AutomaticSize.Y,
-                BackgroundColor3 = CFG.GroupBg,
-                BorderSizePixel = 0
-            })
-            Create("UIStroke", { Parent = Box, Color = CFG.Border, Thickness = 1 })
-            Create("UICorner", { Parent = Box, CornerRadius = UDim.new(0, 4) })
-            
-            -- Title Overlap
-            local LabelCont = Create("Frame", {
-                Parent = Box,
-                BackgroundColor3 = CFG.BgPanel,
-                Size = UDim2.new(0, 0, 0, 14),
-                AutomaticSize = Enum.AutomaticSize.X,
-                Position = UDim2.new(0, 10, 0, -8),
-                BorderSizePixel = 0,
-                ZIndex = 5
-            })
-            Create("TextLabel", {
-                Parent = LabelCont,
-                Text = title,
-                TextColor3 = CFG.Accent,
-                Font = Enum.Font.GothamBold,
-                TextSize = 11,
-                Size = UDim2.new(0, 0, 1, 0),
-                AutomaticSize = Enum.AutomaticSize.X,
-                BackgroundTransparency = 1
-            })
-            Create("UIPadding", { Parent = LabelCont, PaddingLeft = UDim.new(0,5), PaddingRight = UDim.new(0,5) })
-            
-            -- Inner Container
-            local Inner = Create("Frame", {
-                Parent = Box,
-                Size = UDim2.new(1, 0, 0, 0),
-                AutomaticSize = Enum.AutomaticSize.Y,
-                BackgroundTransparency = 1
-            })
-            Create("UIPadding", { Parent = Inner, PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) })
-            Create("UIListLayout", { Parent = Inner, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-            
-            return Inner -- Return the inner container to put elements in
+        -- Auto-Groupbox Holder
+        local AutoGroupboxInner = nil
+        local AutoGroupboxLabel = nil
+        
+        function Tab:GetAutoGroup()
+            if not AutoGroupboxInner then
+                AutoGroupboxInner, AutoGroupboxLabel = CreateGroupboxUI(Scroll, "Main")
+            end
+            return AutoGroupboxInner
         end
         
-        -- Groupbox Management
-        local CurrentGroupbox = nil
-        
-        -- // FUNCTION: GROUPBOX //
-        function Tab:Groupbox(title)
-            local Inner = CreateGroupboxUI(Scroll, title)
+        -- // NEW FUNCTION: CREATE GROUPBOX (CUSTOM SIZE) //
+        function Tab:CreateGroupbox(config)
+            local gName = config.Name or config.Title or "Group"
+            local gSize = config.Size or UDim2.new(1, 0, 0, 0) -- Default full width
             
+            -- Create the UI
+            local Inner, Label = CreateGroupboxUI(Scroll, gName, gSize)
+            
+            -- Create Group Object
             local Group = {}
-            -- Re-implement element functions for this specific groupbox
-            function Group:Toggle(cfg) return self:_Element(Inner, "Toggle", cfg) end
-            function Group:Slider(cfg) return self:_Element(Inner, "Slider", cfg) end
-            function Group:Dropdown(cfg) return self:_Element(Inner, "Dropdown", cfg) end
-            function Group:Button(cfg) return self:_Element(Inner, "Button", cfg) end
             
-            -- Inherit the internal _Element builder
-            Group._Element = Tab._Element
+            -- Function to update text (Selection style)
+            function Group:SetText(newText)
+                Label.Text = newText
+            end
             
-            CurrentGroupbox = Inner -- Update current default
+            -- Map element functions to this specific group
+            function Group:Toggle(cfg) return Tab:_Element(Inner, "Toggle", cfg) end
+            function Group:Slider(cfg) return Tab:_Element(Inner, "Slider", cfg) end
+            function Group:Dropdown(cfg) return Tab:_Element(Inner, "Dropdown", cfg) end
+            function Group:Button(cfg) return Tab:_Element(Inner, "Button", cfg) end
+            
             return Group
         end
         
@@ -358,43 +379,48 @@ function ProjectZero:Window(options)
                 
                 local Btn = Create("TextButton", {
                     Parent = parent,
-                    Size = UDim2.new(1, 0, 0, 20),
-                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 35),
+                    BackgroundColor3 = CFG.GroupBg,
+                    AutoButtonColor = false,
                     Text = ""
                 })
-                local Box = Create("Frame", {
+                Create("UICorner", { Parent = Btn, CornerRadius = UDim.new(0, 4) })
+                Create("UIStroke", { Parent = Btn, Color = CFG.Border, Thickness = 1 })
+                
+                local CheckBox = Create("Frame", {
                     Parent = Btn,
-                    Size = UDim2.new(0, 16, 0, 16),
-                    Position = UDim2.new(0, 0, 0.5, 0),
+                    Size = UDim2.new(0, 18, 0, 18),
+                    Position = UDim2.new(0, 10, 0.5, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundColor3 = Color3.fromHex("#252525")
                 })
-                Create("UICorner", { Parent = Box, CornerRadius = UDim.new(0, 3) })
-                Create("UIStroke", { Parent = Box, Color = Color3.fromHex("#444") })
-                local Check = Create("Frame", {
-                    Parent = Box,
+                Create("UICorner", { Parent = CheckBox, CornerRadius = UDim.new(0, 4) })
+                
+                local CheckFill = Create("Frame", {
+                    Parent = CheckBox,
                     Size = UDim2.new(1, -4, 1, -4),
                     Position = UDim2.new(0.5,0,0.5,0),
                     AnchorPoint = Vector2.new(0.5,0.5),
                     BackgroundColor3 = CFG.Accent,
                     BackgroundTransparency = state and 0 or 1
                 })
-                Create("UICorner", { Parent = Check, CornerRadius = UDim.new(0, 2) })
-                Create("TextLabel", {
+                Create("UICorner", { Parent = CheckFill, CornerRadius = UDim.new(0, 3) })
+                
+                local Label = Create("TextLabel", {
                     Parent = Btn,
                     Text = title,
+                    Size = UDim2.new(1, -40, 1, 0),
+                    Position = UDim2.new(0, 38, 0, 0),
+                    BackgroundTransparency = 1,
+                    TextColor3 = CFG.TextMain,
                     Font = CFG.Font,
                     TextSize = 13,
-                    TextColor3 = Color3.fromHex("#cccccc"),
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Size = UDim2.new(1, -24, 1, 0),
-                    Position = UDim2.new(0, 24, 0, 0),
-                    BackgroundTransparency = 1
+                    TextXAlignment = Enum.TextXAlignment.Left
                 })
                 
                 Btn.MouseButton1Click:Connect(function()
                     state = not state
-                    TweenService:Create(Check, TweenInfo.new(0.1), {BackgroundTransparency = state and 0 or 1}):Play()
+                    TweenService:Create(CheckFill, TweenInfo.new(0.1), {BackgroundTransparency = state and 0 or 1}):Play()
                     SavedData[title] = state
                     Save()
                     task.spawn(cb, state)
@@ -407,14 +433,51 @@ function ProjectZero:Window(options)
                 local val = SavedData[title] or cfg.Default or min
                 local cb = cfg.Callback or function() end
                 
-                local Frame = Create("Frame", { Parent = parent, Size = UDim2.new(1, 0, 0, 35), BackgroundTransparency = 1 })
-                Create("TextLabel", { Parent = Frame, Text = title, Font = CFG.Font, TextSize = 12, TextColor3 = Color3.fromHex("#888"), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1 })
-                local Value = Create("TextLabel", { Parent = Frame, Text = tostring(val), Font = CFG.Font, TextSize = 12, TextColor3 = CFG.Accent, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1 })
+                local Frame = Create("Frame", { Parent = parent, Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = CFG.GroupBg })
+                Create("UICorner", { Parent = Frame, CornerRadius = UDim.new(0, 4) })
+                Create("UIStroke", { Parent = Frame, Color = CFG.Border, Thickness = 1 })
                 
-                local Track = Create("TextButton", { Parent = Frame, Text = "", Size = UDim2.new(1, 0, 0, 6), Position = UDim2.new(0, 0, 1, -6), BackgroundColor3 = Color3.fromHex("#252525"), AutoButtonColor = false })
-                Create("UICorner", { Parent = Track, CornerRadius = UDim.new(0, 3) })
-                local Fill = Create("Frame", { Parent = Track, Size = UDim2.new((val-min)/(max-min), 0, 1, 0), BackgroundColor3 = CFG.Accent, BorderSizePixel = 0 })
-                Create("UICorner", { Parent = Fill, CornerRadius = UDim.new(0, 3) })
+                local Label = Create("TextLabel", {
+                    Parent = Frame,
+                    Text = title,
+                    Position = UDim2.new(0, 10, 0, 5),
+                    Size = UDim2.new(1, -20, 0, 20),
+                    BackgroundTransparency = 1,
+                    TextColor3 = CFG.TextMain,
+                    Font = CFG.Font,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                
+                local Value = Create("TextLabel", {
+                    Parent = Frame,
+                    Text = tostring(val),
+                    Position = UDim2.new(0, 10, 0, 5),
+                    Size = UDim2.new(1, -20, 0, 20),
+                    BackgroundTransparency = 1,
+                    TextColor3 = CFG.Accent,
+                    Font = CFG.Font,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Right
+                })
+                
+                local Track = Create("TextButton", {
+                    Parent = Frame,
+                    Text = "",
+                    Size = UDim2.new(1, -20, 0, 4),
+                    Position = UDim2.new(0, 10, 0, 35),
+                    BackgroundColor3 = Color3.fromHex("#333333"),
+                    AutoButtonColor = false
+                })
+                Create("UICorner", { Parent = Track, CornerRadius = UDim.new(1, 0) })
+                
+                local Fill = Create("Frame", {
+                    Parent = Track,
+                    Size = UDim2.new((val-min)/(max-min), 0, 1, 0),
+                    BackgroundColor3 = CFG.Accent,
+                    BorderSizePixel = 0
+                })
+                Create("UICorner", { Parent = Fill, CornerRadius = UDim.new(1, 0) })
                 
                 local dragging = false
                 local function Update(input)
@@ -437,14 +500,42 @@ function ProjectZero:Window(options)
                 local current = SavedData[title] or cfg.Default or options[1]
                 local cb = cfg.Callback or function() end
                 
-                local Frame = Create("Frame", { Parent = parent, Size = UDim2.new(1, 0, 0, 45), BackgroundTransparency = 1, ClipsDescendants = true })
-                Create("TextLabel", { Parent = Frame, Text = title, Font = CFG.Font, TextSize = 12, TextColor3 = Color3.fromHex("#888"), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1 })
+                local Container = Create("Frame", { Parent = parent, Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = CFG.GroupBg, ClipsDescendants = true })
+                Create("UICorner", { Parent = Container, CornerRadius = UDim.new(0, 4) })
+                Create("UIStroke", { Parent = Container, Color = CFG.Border, Thickness = 1 })
                 
-                local MainBtn = Create("TextButton", { Parent = Frame, Text = current, Size = UDim2.new(1, 0, 0, 25), Position = UDim2.new(0, 0, 0, 18), BackgroundColor3 = CFG.BgPanel, TextColor3 = CFG.TextMain, Font = CFG.Font, TextSize = 13 })
+                local Label = Create("TextLabel", {
+                    Parent = Container,
+                    Text = title,
+                    Size = UDim2.new(1, -20, 0, 20),
+                    Position = UDim2.new(0, 10, 0, 5),
+                    BackgroundTransparency = 1,
+                    TextColor3 = CFG.TextMain,
+                    Font = CFG.Font,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                
+                local MainBtn = Create("TextButton", {
+                    Parent = Container,
+                    Size = UDim2.new(1, -20, 0, 20),
+                    Position = UDim2.new(0, 10, 0, 25),
+                    BackgroundColor3 = CFG.BgPanel,
+                    Text = current,
+                    TextColor3 = CFG.TextDim,
+                    Font = CFG.Font,
+                    TextSize = 12
+                })
                 Create("UICorner", { Parent = MainBtn, CornerRadius = UDim.new(0, 4) })
-                Create("UIStroke", { Parent = MainBtn, Color = CFG.Border })
                 
-                local List = Create("Frame", { Parent = Frame, Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 0, 45), BackgroundColor3 = CFG.BgPanel, BorderSizePixel = 0, ClipsDescendants = true })
+                local List = Create("Frame", {
+                    Parent = Container,
+                    Size = UDim2.new(1, -20, 0, 0),
+                    Position = UDim2.new(0, 10, 0, 50),
+                    BackgroundColor3 = CFG.BgPanel,
+                    BorderSizePixel = 0,
+                    ClipsDescendants = true
+                })
                 Create("UIListLayout", { Parent = List, SortOrder = Enum.SortOrder.LayoutOrder })
                 
                 local isOpen = false
@@ -454,7 +545,7 @@ function ProjectZero:Window(options)
                         current = opt
                         MainBtn.Text = opt
                         isOpen = false
-                        Frame:TweenSize(UDim2.new(1,0,0,45), "Out", "Quad", 0.2, true)
+                        Container:TweenSize(UDim2.new(1,0,0,50), "Out", "Quad", 0.2, true)
                         SavedData[title] = current
                         Save()
                         task.spawn(cb, current)
@@ -463,22 +554,13 @@ function ProjectZero:Window(options)
                 
                 MainBtn.MouseButton1Click:Connect(function()
                     isOpen = not isOpen
-                    Frame:TweenSize(UDim2.new(1,0,0, isOpen and 45+(#options*25) or 45), "Out", "Quad", 0.2, true)
+                    Container:TweenSize(UDim2.new(1,0,0, isOpen and 55+(#options*25) or 50), "Out", "Quad", 0.2, true)
                 end)
                 if current ~= cfg.Default then task.spawn(cb, current) end
             end
         end
         
-        -- // AUTO GROUPBOX HANDLER //
-        -- If user calls Tab:Toggle instead of Tab:Groupbox():Toggle(), we handle it here
-        
-        function Tab:GetAutoGroup()
-            if not CurrentGroupbox then
-                CurrentGroupbox = CreateGroupboxUI(Scroll, "Main")
-            end
-            return CurrentGroupbox
-        end
-        
+        -- // AUTO-GROUP WRAPPERS //
         function Tab:Toggle(cfg) return self:_Element(self:GetAutoGroup(), "Toggle", cfg) end
         function Tab:Slider(cfg) return self:_Element(self:GetAutoGroup(), "Slider", cfg) end
         function Tab:Dropdown(cfg) return self:_Element(self:GetAutoGroup(), "Dropdown", cfg) end
